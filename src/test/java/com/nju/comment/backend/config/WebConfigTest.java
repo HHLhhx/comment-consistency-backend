@@ -9,8 +9,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Assertions;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -71,20 +70,22 @@ class WebConfigTest {
     public void objectMapper_should_serialize_local_date_time_correctly() throws Exception {
         LocalDateTime now = LocalDateTime.of(2025, 12, 7, 12, 0, 0);
         String json = objectMapper.writeValueAsString(now);
-        assertThat(json).isEqualTo("\"2025-12-07T12:00:00\"");
+        Assertions.assertEquals("\"2025-12-07T12:00:00\"", json);
     }
 
     @Test
     public void objectMapper_should_deserialize_local_date_time_correctly() throws Exception {
         String json = "\"2025-12-07T12:00:00\"";
+        LocalDateTime expected = LocalDateTime.of(2025, 12, 7, 12, 0, 0);
         LocalDateTime parsed = objectMapper.readValue(json, LocalDateTime.class);
-        assertThat(parsed).isEqualTo(LocalDateTime.of(2025, 12, 7, 12, 0, 0));
+        Assertions.assertEquals(expected, parsed);
     }
 
     @Test
     public void objectMapper_should_throw_exception_for_invalid_date_time_format() {
         String invalidJson = "\"2025-12-07 12:00:00\"";
-        assertThatThrownBy(() -> objectMapper.readValue(invalidJson, LocalDateTime.class))
-                .isInstanceOf(Exception.class);
+        Assertions.assertThrows(Exception.class, () ->
+            objectMapper.readValue(invalidJson, LocalDateTime.class)
+        );
     }
 }
