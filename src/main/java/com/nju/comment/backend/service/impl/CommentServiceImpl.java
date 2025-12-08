@@ -31,7 +31,7 @@ public class CommentServiceImpl implements CommentService {
         String requestId = UUID.randomUUID().toString();
         Instant startTime = Instant.now();
 
-        log.info("开始处理注释生成请求, requestId={}", requestId);
+        log.debug("开始处理注释生成请求, requestId={}", requestId);
 
         try {
             //TODO: cache
@@ -48,7 +48,7 @@ public class CommentServiceImpl implements CommentService {
 
             //TODO: cache save
 
-            log.info("注释生成请求处理完成, requestId={}, 耗时={}", requestId, response.getProcessingTimeMs());
+            log.debug("注释生成请求处理完成, requestId={}, 耗时={}ms", requestId, response.getProcessingTimeMs());
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {
             log.error("注释生成请求处理失败, requestId={}, 错误信息={}", requestId, e.getMessage());

@@ -23,11 +23,11 @@ public class LLMServiceImpl implements LLMService {
             String result = ollamaChatModel.call(prompt);
 
             long duration = System.currentTimeMillis() - startTime;
-            log.debug("LLM生成注释完成，耗时：{} ms，内容：\n{}", duration, result);
+            log.debug("LLM生成注释完成，耗时：{}ms，内容：\n{}", duration, result);
             return result;
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("LLM生成注释失败，耗时：{} ms", duration);
+            log.error("LLM生成注释失败，耗时：{}ms", duration);
             throw new RuntimeException("LLM生成注释失败: " + e.getMessage(), e);
         }
     }

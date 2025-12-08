@@ -37,8 +37,6 @@ class LLMServiceImplTest {
 
         assertNotNull(result, "LLM generate comment result should not be null");
         assertFalse(result.trim().isEmpty(), "LLM generate comment result should not be empty");
-
-        System.out.println("Generated Comment:\n" + result);
     }
 
     @Test
