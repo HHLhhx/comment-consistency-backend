@@ -23,7 +23,7 @@ public class LLMServiceImpl implements LLMService {
             String result = ollamaChatModel.call(prompt);
 
             long duration = System.currentTimeMillis() - startTime;
-            log.debug("LLM生成注释完成，耗时：{} ms", duration);
+            log.debug("LLM生成注释完成，耗时：{} ms，内容：\n{}", duration, result);
             return result;
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -40,5 +40,10 @@ public class LLMServiceImpl implements LLMService {
             log.warn("LLM服务健康检查失败: {}", e.getMessage());
             return false;
         }
+    }
+
+    @Override
+    public String getChatModelName() {
+        return ollamaChatModel.getDefaultOptions().getModel();
     }
 }

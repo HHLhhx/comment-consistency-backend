@@ -11,4 +11,9 @@ public interface LLMService {
      * 检查服务健康状态
      */
     boolean isServiceHealthy();
+
+    /**
+     * 获取所使用的聊天模型名称
+     */
+    String getChatModelName();
 }
