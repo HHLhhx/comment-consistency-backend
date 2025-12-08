@@ -53,13 +53,7 @@ public class PromptServiceImpl implements PromptService {
                         })
                         .toList();
                 context.put("relatedMethods", methodsForTemplate);
-            } else {
-                context.put("relatedMethods", null);
             }
-        } else {
-            context.put("className", null);
-            context.put("packageName", null);
-            context.put("relatedMethods", null);
         }
 
         try {

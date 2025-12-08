@@ -15,17 +15,26 @@ ${code}
 ```
 
 要求：
-1. 如果原注释与代码逻辑不符，请根据当前代码重新生成
-2. 注释风格：${style}
-3. 注释语言：${commentLanguage}
+<#assign idx = 1>
+<#if existingComment?has_content>
+${idx}. 如果原注释与代码逻辑不符，请根据当前代码重新生成
+<#assign idx++>
+</#if>
+${idx}. 注释风格：${style}
+<#assign idx++>
+${idx}. 注释语言：${commentLanguage}
+<#assign idx++>
 <#if includeParams>
-4. 包含参数说明
+${idx}. 包含参数说明
+<#assign idx++>
 </#if>
 <#if includeReturn>
-5. 包含返回值说明
+${idx}. 包含返回值说明
+<#assign idx++>
 </#if>
 <#if includeExceptions>
-6. 包含异常说明
+${idx}. 包含异常说明
+<#assign idx++>
 </#if>
 
 <#if className?has_content>
