@@ -1,40 +1,51 @@
+# 应用服务器配置
 server:
   port: 8080
   servlet:
     context-path: /comment
 
+# Spring Boot 应用配置
 spring:
   application:
     name: comment-backend
-
   cache:
     type: caffeine
     caffeine:
       spec: maximumSize=500,expireAfterAccess=600s
-
+  freemarker:
+    enabled: true
+    suffix: .ftl
+    charset: UTF-8
+    template-loader-path: classpath:/prompts/
+    cache: false
   ai:
     ollama:
       base-url: http://localhost:11434
       chat:
         model: codellama:7b
+        options:
+          temperature: 0.2
+          top-p: 0.9
+          top-k: 40
 
-task:
-  execution:
-    pool:
-      llm-task-executor:
-        core-size: 20
-        max-size: 50
-        queue-capacity: 1000
-        keep-alive: 60
-        thread-name-prefix: llm-executor-
-      health-check-executor:
-        core-size: 2
-        max-size: 5
-        queue-capacity: 100
-        keep-alive: 30
-        thread-name-prefix: health-check-
+# 异步任务配置
+#task:
+#  execution:
+#    pool:
+#      llm-task-executor:
+#        core-size: 20
+#        max-size: 50
+#        queue-capacity: 1000
+#        keep-alive: 60
+#        thread-name-prefix: llm-executor-
+#      health-check-executor:
+#        core-size: 2
+#        max-size: 5
+#        queue-capacity: 100
+#        keep-alive: 30
+#        thread-name-prefix: health-check-
 
-
+# 监控配置
 management:
   endpoints:
     web:
@@ -54,6 +65,7 @@ management:
       percentiles-histogram:
         http.server.requests: true
 
+# 日志配置
 logging:
   level:
     root: INFO
@@ -66,3 +78,21 @@ logging:
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
   file:
     name: logs/comment.log
+
+# 应用配置
+app:
+  prompt:
+    template-name: comment_template.ftl
+  thread-pool:
+    llm:
+      core-size: 20
+      max-size: 50
+      queue-capacity: 1000
+      keep-alive: 60
+      thread-name-prefix: llm-executor-
+    health-check:
+      core-size: 2
+      max-size: 5
+      queue-capacity: 100
+      keep-alive: 30
+      thread-name-prefix: health-check-

@@ -15,19 +15,19 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 public class AsyncConfig implements AsyncConfigurer {
 
-    @Value("${task.execution.pool.llm-task-executor.core-size:20}")
+    @Value("${app.thread-pool.llm.core-size:20}")
     private int llmCorePoolSize;
 
-    @Value("${task.execution.pool.llm-task-executor.max-size:50}")
+    @Value("${app.thread-pool.llm.max-size:50}")
     private int llmMaxPoolSize;
 
-    @Value("${task.execution.pool.llm-task-executor.queue-capacity:1000}")
+    @Value("${app.thread-pool.llm.queue-capacity:200}")
     private int llmQueueCapacity;
 
-    @Value("${task.execution.pool.llm-task-executor.keep-alive:60}")
+    @Value("${app.thread-pool.llm.keep-alive:60}")
     private int llmKeepAliveSeconds;
 
-    @Value("${task.execution.pool.llm-task-executor.thread-name-prefix:llm-executor-}")
+    @Value("${app.thread-pool.llm.thread-name-prefix:llm-executor-}")
     private String llmThreadNamePrefix;
 
     @Bean(name = "llmTaskExecutor")
@@ -59,19 +59,19 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
 
-    @Value("${task.execution.pool.health-check-executor.core-size:2}")
+    @Value("${app.thread-pool.health-check.core-size:2}")
     private int healthCheckCorePoolSize;
 
-    @Value("${task.execution.pool.health-check-executor.max-size:5}")
+    @Value("${app.thread-pool.health-check.max-size:5}")
     private int healthCheckMaxPoolSize;
 
-    @Value("${task.execution.pool.health-check-executor.queue-capacity:100}")
+    @Value("${app.thread-pool.health-check.queue-capacity:50}")
     private int healthCheckQueueCapacity;
 
-    @Value("${task.execution.pool.health-check-executor.keep-alive:30}")
+    @Value("${app.thread-pool.health-check.keep-alive:30}")
     private int healthCheckKeepAliveSeconds;
 
-    @Value("${task.execution.pool.health-check-executor.thread-name-prefix:health-check-}")
+    @Value("${app.thread-pool.health-check.thread-name-prefix:health-check-}")
     private String healthCheckThreadNamePrefix;
 
     @Bean(name = "healthCheckExecutor")
