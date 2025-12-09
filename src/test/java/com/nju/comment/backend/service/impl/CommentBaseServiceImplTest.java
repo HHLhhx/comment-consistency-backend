@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
-class CommentServiceImplTest {
+class CommentBaseServiceImplTest {
 
     @Mock
     private PromptService promptService;
@@ -30,7 +30,7 @@ class CommentServiceImplTest {
     private LLMService llmService;
 
     @InjectMocks
-    private CommentServiceImpl commentService;
+    private CommentBaseServiceImpl commentService;
 
     private CommentRequest request;
 

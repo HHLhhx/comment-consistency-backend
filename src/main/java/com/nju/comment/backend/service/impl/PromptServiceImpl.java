@@ -26,17 +26,20 @@ public class PromptServiceImpl implements PromptService {
 
     @Override
     public String buildPrompt(CommentRequest request) {
-        log.debug("构建提示词开始");
+        log.info("构建提示词开始");
 
         Map<String, Object> context = new HashMap<>();
         context.put("code", request.getCode());
         context.put("existingComment", request.getExistingComment());
         context.put("language", request.getLanguage());
-        context.put("includeParams", request.getOptions().isIncludeParams());
-        context.put("includeReturn", request.getOptions().isIncludeReturn());
-        context.put("includeExceptions", request.getOptions().isIncludeExceptions());
-        context.put("style", request.getOptions().getStyle());
-        context.put("commentLanguage", request.getOptions().getLanguage());
+
+        if (request.getOptions() != null) {
+            context.put("includeParams", request.getOptions().isIncludeParams());
+            context.put("includeReturn", request.getOptions().isIncludeReturn());
+            context.put("includeExceptions", request.getOptions().isIncludeExceptions());
+            context.put("style", request.getOptions().getStyle());
+            context.put("commentLanguage", request.getOptions().getLanguage());
+        }
 
         if (request.getContext() != null) {
             context.put("className", request.getContext().getClassName());

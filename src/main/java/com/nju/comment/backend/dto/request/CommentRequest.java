@@ -24,6 +24,7 @@ public class CommentRequest {
 
     private Context context;
 
+    @Builder.Default
     private GenerationOptions options = GenerationOptions.defaultOptions();
 
     @Data
@@ -51,10 +52,10 @@ public class CommentRequest {
         private boolean includeExceptions = false;
 
         @Builder.Default
-        private String style = "javadoc";
+        private String style = "Javadoc";
 
         @Builder.Default
-        private String language = "chinese";
+        private String language = "Chinese";
 
         public static GenerationOptions defaultOptions() {
             return GenerationOptions.builder().build();
