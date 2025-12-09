@@ -11,7 +11,7 @@ spring:
   cache:
     type: caffeine
     caffeine:
-      spec: maximumSize=500,expireAfterAccess=600s
+      spec: maximumSize=500,expireAfterWrite=1h
   freemarker:
     enabled: true
     suffix: .ftl
@@ -84,13 +84,13 @@ app:
   prompt:
     template-name: comment_template.ftl
   thread-pool:
-    llm:
+    llm-pool:
       core-size: 20
       max-size: 50
       queue-capacity: 1000
       keep-alive: 60
       thread-name-prefix: llm-executor-
-    health-check:
+    health-check-pool:
       core-size: 2
       max-size: 5
       queue-capacity: 100
@@ -98,3 +98,7 @@ app:
       thread-name-prefix: health-check-
   comment:
     max-batch-num: 10
+  cache:
+    comment:
+      max-size: 500
+      ttl: 3600

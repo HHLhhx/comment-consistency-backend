@@ -1,7 +1,8 @@
 package com.nju.comment.backend.config;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
@@ -13,31 +14,22 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 @EnableAsync
 @Slf4j
+@ConfigurationProperties(prefix = "app.thread-pool")
+@Data
 public class AsyncConfig implements AsyncConfigurer {
 
-    @Value("${app.thread-pool.llm.core-size:20}")
-    private int llmCorePoolSize;
+    private AsyncConfigItem llmPool;
 
-    @Value("${app.thread-pool.llm.max-size:50}")
-    private int llmMaxPoolSize;
-
-    @Value("${app.thread-pool.llm.queue-capacity:200}")
-    private int llmQueueCapacity;
-
-    @Value("${app.thread-pool.llm.keep-alive:60}")
-    private int llmKeepAliveSeconds;
-
-    @Value("${app.thread-pool.llm.thread-name-prefix:llm-executor-}")
-    private String llmThreadNamePrefix;
+    private AsyncConfigItem healthCheckPool;
 
     @Bean(name = "llmTaskExecutor")
     public ThreadPoolTaskExecutor llmTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(llmCorePoolSize);
-        executor.setMaxPoolSize(llmMaxPoolSize);
-        executor.setQueueCapacity(llmQueueCapacity);
-        executor.setKeepAliveSeconds(llmKeepAliveSeconds);
-        executor.setThreadNamePrefix(llmThreadNamePrefix);
+        executor.setCorePoolSize(llmPool.getCoreSize());
+        executor.setMaxPoolSize(llmPool.getMaxSize());
+        executor.setQueueCapacity(llmPool.getQueueCapacity());
+        executor.setKeepAliveSeconds(llmPool.getKeepAlive());
+        executor.setThreadNamePrefix(llmPool.getThreadNamePrefix());
 
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
 
@@ -58,37 +50,20 @@ public class AsyncConfig implements AsyncConfigurer {
         return executor;
     }
 
-
-    @Value("${app.thread-pool.health-check.core-size:2}")
-    private int healthCheckCorePoolSize;
-
-    @Value("${app.thread-pool.health-check.max-size:5}")
-    private int healthCheckMaxPoolSize;
-
-    @Value("${app.thread-pool.health-check.queue-capacity:50}")
-    private int healthCheckQueueCapacity;
-
-    @Value("${app.thread-pool.health-check.keep-alive:30}")
-    private int healthCheckKeepAliveSeconds;
-
-    @Value("${app.thread-pool.health-check.thread-name-prefix:health-check-}")
-    private String healthCheckThreadNamePrefix;
-
     @Bean(name = "healthCheckExecutor")
     public ThreadPoolTaskExecutor healthCheckExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(healthCheckCorePoolSize);
-        executor.setMaxPoolSize(healthCheckMaxPoolSize);
-        executor.setQueueCapacity(healthCheckQueueCapacity);
-        executor.setKeepAliveSeconds(healthCheckKeepAliveSeconds);
-        executor.setThreadNamePrefix(healthCheckThreadNamePrefix);
+        executor.setCorePoolSize(healthCheckPool.getCoreSize());
+        executor.setMaxPoolSize(healthCheckPool.getMaxSize());
+        executor.setQueueCapacity(healthCheckPool.getQueueCapacity());
+        executor.setKeepAliveSeconds(healthCheckPool.getKeepAlive());
+        executor.setThreadNamePrefix(healthCheckPool.getThreadNamePrefix());
         executor.initialize();
 
         logThreadPoolStatus(executor, "Health Check Executor");
 
         return  executor;
     }
-
 
     private void logThreadPoolStatus(ThreadPoolTaskExecutor executor, String name) {
         log.info("{} 配置: 核心线程数={}, 最大线程数={}, 队列容量={}, 保活时间={}",
@@ -97,5 +72,14 @@ public class AsyncConfig implements AsyncConfigurer {
                 executor.getMaxPoolSize(),
                 executor.getQueueCapacity(),
                 executor.getKeepAliveSeconds());
+    }
+
+    @Data
+    public static class AsyncConfigItem {
+        private int coreSize;
+        private int maxSize;
+        private int queueCapacity;
+        private int keepAlive;
+        private String threadNamePrefix;
     }
 }

@@ -2,8 +2,6 @@ package com.nju.comment.backend.service.impl;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -13,31 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
 class LLMServiceImplTest {
-
-    @Autowired
-    private  LLMServiceImpl llmService;
-
-    @Test
-    void local_ollama_health_and_generate_test() {
-        assertNotNull(llmService, "LLMServiceImpl should be autowired successfully");
-
-        boolean healthy;
-        try {
-            healthy = llmService.isServiceHealthy();
-        } catch (Exception e) {
-            fail("Health check threw an exception: " + e.getMessage());
-            return;
-        }
-        assertTrue(healthy, "LLM service should be healthy");
-
-        String prompt = "请生成一段简短的 JavaDoc 风格注释，描述一个用于将两个整数相加的方法。";
-        String result = llmService.generateComment(prompt);
-
-        assertNotNull(result, "LLM generate comment result should not be null");
-        assertFalse(result.trim().isEmpty(), "LLM generate comment result should not be empty");
-    }
 
     @Test
     void generate_comment_returns_result_for_valid_prompt() {
