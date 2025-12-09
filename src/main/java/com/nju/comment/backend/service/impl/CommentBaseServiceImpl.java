@@ -2,6 +2,7 @@ package com.nju.comment.backend.service.impl;
 
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.CommentResponse;
+import com.nju.comment.backend.service.CacheService;
 import com.nju.comment.backend.service.CommentBaseService;
 import com.nju.comment.backend.service.LLMService;
 import com.nju.comment.backend.service.PromptService;
@@ -24,6 +25,8 @@ public class CommentBaseServiceImpl implements CommentBaseService {
 
     private final PromptService promptService;
 
+    private final CacheService cacheService;
+    
     @Override
     @Async("llmTaskExecutor")
     public CompletableFuture<CommentResponse> generateComment(CommentRequest request) {
@@ -33,19 +36,25 @@ public class CommentBaseServiceImpl implements CommentBaseService {
         log.info("开始处理注释生成请求, requestId={}", requestId);
 
         try {
-            //TODO: cache
+            String key = generateCommentCacheKey(request);
+            CommentResponse cachedResponse = cacheService.getComment(key);
+            if (cachedResponse != null) {
+                log.info("注释生成请求命中缓存, requestId={}", requestId);
+                cachedResponse.setRequestId(requestId);
+                cachedResponse.setProcessingTimeMs(Duration.between(startTime, Instant.now()).toMillis());
+                return CompletableFuture.completedFuture(cachedResponse);
+            }
 
             String prompt = promptService.buildPrompt(request);
             String generatedComment = llmService.generateComment(prompt);
+            String processedComment = postProcessComment(generatedComment, request);
 
-            //TODO: process generated comment
-
-            CommentResponse response = CommentResponse.success(generatedComment)
+            CommentResponse response = CommentResponse.success(processedComment)
                     .withRequestId(requestId)
                     .withModelUsed(llmService.getChatModelName())
                     .withProcessingTime(Duration.between(startTime, Instant.now()).toMillis());
 
-            //TODO: cache save
+            cacheService.saveComment(key, response);
 
             log.info("注释生成请求处理完成, requestId={}, 耗时={}ms", requestId, response.getProcessingTimeMs());
             return CompletableFuture.completedFuture(response);
@@ -58,6 +67,23 @@ public class CommentBaseServiceImpl implements CommentBaseService {
 
             return CompletableFuture.completedFuture(errorResponse);
         }
+    }
+
+    private String postProcessComment(String generatedComment, CommentRequest request) {
+        //TODO
+        return generatedComment;
+    }
+
+    private String generateCommentCacheKey(CommentRequest request) {
+        return String.format("%s:%s:%s:%s:%s:%s:%s:%s",
+                request.getLanguage(),
+                request.getOptions().getStyle(),
+                request.getOptions().getLanguage(),
+                request.getOptions().isIncludeParams(),
+                request.getOptions().isIncludeReturn(),
+                request.getOptions().isIncludeExceptions(),
+                request.getCode().hashCode(),
+                request.getExistingComment() != null ? request.getExistingComment().hashCode() : 0);
     }
 
     @Override

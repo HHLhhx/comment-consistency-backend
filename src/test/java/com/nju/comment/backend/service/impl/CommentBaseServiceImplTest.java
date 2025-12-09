@@ -2,13 +2,15 @@ package com.nju.comment.backend.service.impl;
 
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.CommentResponse;
+import com.nju.comment.backend.service.CacheService;
 import com.nju.comment.backend.service.LLMService;
 import com.nju.comment.backend.service.PromptService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -20,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class CommentBaseServiceImplTest {
 
     @Mock
@@ -29,6 +31,9 @@ class CommentBaseServiceImplTest {
     @Mock
     private LLMService llmService;
 
+    @Mock
+    private CacheService cacheService;
+
     @InjectMocks
     private CommentBaseServiceImpl commentService;
 
@@ -36,7 +41,7 @@ class CommentBaseServiceImplTest {
 
     @BeforeEach
     void setup() {
-        request = new CommentRequest();
+        request = CommentRequest.builder().code("test code").build();
     }
 
     @Test
