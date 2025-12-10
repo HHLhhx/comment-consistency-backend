@@ -35,6 +35,7 @@ public class LLMServiceImpl implements LLMService {
     @Override
     public boolean isServiceHealthy() {
         try {
+            log.info("LLM服务健康检查");
             return  ollamaChatModel.call("hello") != null;
         } catch (Exception e) {
             log.warn("LLM服务健康检查失败: {}", e.getMessage());

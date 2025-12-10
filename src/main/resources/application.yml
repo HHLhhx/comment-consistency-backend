@@ -2,7 +2,7 @@
 server:
   port: 8080
   servlet:
-    context-path: /comment
+    context-path: /api
 
 # Spring Boot 应用配置
 spring:
