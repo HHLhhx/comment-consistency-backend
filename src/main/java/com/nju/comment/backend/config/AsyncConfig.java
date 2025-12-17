@@ -20,8 +20,6 @@ public class AsyncConfig implements AsyncConfigurer {
 
     private AsyncConfigItem llmPool;
 
-    private AsyncConfigItem healthCheckPool;
-
     @Bean(name = "llmTaskExecutor")
     public ThreadPoolTaskExecutor llmTaskExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
@@ -48,21 +46,6 @@ public class AsyncConfig implements AsyncConfigurer {
         logThreadPoolStatus(executor, "LLM Task Executor");
 
         return executor;
-    }
-
-    @Bean(name = "healthCheckExecutor")
-    public ThreadPoolTaskExecutor healthCheckExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(healthCheckPool.getCoreSize());
-        executor.setMaxPoolSize(healthCheckPool.getMaxSize());
-        executor.setQueueCapacity(healthCheckPool.getQueueCapacity());
-        executor.setKeepAliveSeconds(healthCheckPool.getKeepAlive());
-        executor.setThreadNamePrefix(healthCheckPool.getThreadNamePrefix());
-        executor.initialize();
-
-        logThreadPoolStatus(executor, "Health Check Executor");
-
-        return  executor;
     }
 
     private void logThreadPoolStatus(ThreadPoolTaskExecutor executor, String name) {

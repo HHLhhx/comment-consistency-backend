@@ -1,5 +1,7 @@
 package com.nju.comment.backend.service.impl;
 
+import com.nju.comment.backend.exception.ErrorCode;
+import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.LLMService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +30,7 @@ public class LLMServiceImpl implements LLMService {
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             log.error("LLM生成注释失败，耗时：{}ms", duration);
-            throw new RuntimeException("LLM生成注释失败: " + e.getMessage(), e);
+            throw new ServiceException(ErrorCode.LLM_SERVICE_ERROR, e);
         }
     }
 
@@ -36,10 +38,12 @@ public class LLMServiceImpl implements LLMService {
     public boolean isServiceHealthy() {
         try {
             log.info("LLM服务健康检查");
-            return  ollamaChatModel.call("hello") != null;
+            boolean result = ollamaChatModel.call("hello") != null;
+            log.info("LLM服务健康检查结果: {}", result ? "健康" : "不健康");
+            return result;
         } catch (Exception e) {
             log.warn("LLM服务健康检查失败: {}", e.getMessage());
-            return false;
+            throw new ServiceException(ErrorCode.LLM_UNAVAILABLE, e);
         }
     }
 

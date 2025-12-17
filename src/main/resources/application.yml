@@ -28,23 +28,6 @@ spring:
           top-p: 0.9
           top-k: 40
 
-# 异步任务配置
-#task:
-#  execution:
-#    pool:
-#      llm-task-executor:
-#        core-size: 20
-#        max-size: 50
-#        queue-capacity: 1000
-#        keep-alive: 60
-#        thread-name-prefix: llm-executor-
-#      health-check-executor:
-#        core-size: 2
-#        max-size: 5
-#        queue-capacity: 100
-#        keep-alive: 30
-#        thread-name-prefix: health-check-
-
 # 监控配置
 management:
   endpoints:
@@ -90,14 +73,9 @@ app:
       queue-capacity: 1000
       keep-alive: 60
       thread-name-prefix: llm-executor-
-    health-check-pool:
-      core-size: 2
-      max-size: 5
-      queue-capacity: 100
-      keep-alive: 30
-      thread-name-prefix: health-check-
   comment:
-    max-batch-num: 10
+    max-batch-num: 5
+    llm-timeout-seconds: 20
   cache:
     comment:
       max-size: 500

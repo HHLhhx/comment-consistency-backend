@@ -1,6 +1,8 @@
 package com.nju.comment.backend.service.impl;
 
 import com.nju.comment.backend.dto.request.CommentRequest;
+import com.nju.comment.backend.exception.ErrorCode;
+import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.PromptService;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
@@ -70,7 +72,7 @@ public class PromptServiceImpl implements PromptService {
             return prompt;
         } catch (Exception e) {
             log.error("构建提示词失败", e);
-            throw new RuntimeException("构建提示词失败: " + e.getMessage(), e);
+            throw new ServiceException(ErrorCode.PROMPTS_BUILD_ERROR, e);
         }
     }
 }

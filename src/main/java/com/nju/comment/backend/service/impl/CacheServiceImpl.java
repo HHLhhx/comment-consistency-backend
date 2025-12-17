@@ -2,6 +2,8 @@ package com.nju.comment.backend.service.impl;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.nju.comment.backend.dto.response.CommentResponse;
+import com.nju.comment.backend.exception.ErrorCode;
+import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +58,7 @@ public class CacheServiceImpl implements CacheService {
             return nativeCache.asMap().size();
         } catch (Exception e) {
             log.error("获取注释缓存大小失败", e);
-            return 0;
+            throw new ServiceException(ErrorCode.CACHE_SIZE_GET_ERROR, e);
         }
     }
 }

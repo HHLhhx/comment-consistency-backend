@@ -2,6 +2,8 @@ package com.nju.comment.backend.service.impl;
 
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.CommentResponse;
+import com.nju.comment.backend.exception.ErrorCode;
+import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CacheService;
 import com.nju.comment.backend.service.CommentBaseService;
 import com.nju.comment.backend.service.LLMService;
@@ -60,12 +62,7 @@ public class CommentBaseServiceImpl implements CommentBaseService {
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {
             log.error("注释生成请求处理失败, requestId={}, 错误信息={}", requestId, e.getMessage());
-
-            CommentResponse errorResponse = CommentResponse.error(e.getMessage())
-                    .withRequestId(requestId)
-                    .withProcessingTime(Duration.between(startTime, Instant.now()).toMillis());
-
-            return CompletableFuture.completedFuture(errorResponse);
+            throw new ServiceException(ErrorCode.COMMENT_SERVICE_ERROR, e);
         }
     }
 
