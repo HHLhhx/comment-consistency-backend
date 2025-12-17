@@ -6,6 +6,8 @@ import com.nju.comment.backend.service.LLMService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +18,10 @@ public class LLMServiceImpl implements LLMService {
     private final ChatModel ollamaChatModel;
 
     @Override
+    @Retryable(
+        retryFor = {ServiceException.class},
+        backoff = @Backoff(delay = 1000, multiplier = 2)
+    )
     public String generateComment(String prompt) {
         long startTime = System.currentTimeMillis();
 
