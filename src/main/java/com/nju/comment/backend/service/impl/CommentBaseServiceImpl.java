@@ -79,8 +79,7 @@ public class CommentBaseServiceImpl implements CommentBaseService {
                 request.getOptions().isIncludeParams(),
                 request.getOptions().isIncludeReturn(),
                 request.getOptions().isIncludeExceptions(),
-                request.getCode().hashCode(),
-                request.getExistingComment() != null ? request.getExistingComment().hashCode() : 0);
+                request.getCode().hashCode());
     }
 
     @Override
