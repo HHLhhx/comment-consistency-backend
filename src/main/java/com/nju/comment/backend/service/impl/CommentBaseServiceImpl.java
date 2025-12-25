@@ -72,7 +72,7 @@ public class CommentBaseServiceImpl implements CommentBaseService {
     }
 
     private String generateCommentCacheKey(CommentRequest request) {
-        return String.format("%s:%s:%s:%s:%s:%s:%s:%s",
+        return String.format("%s:%s:%s:%s:%s:%s:%s",
                 request.getLanguage(),
                 request.getOptions().getStyle(),
                 request.getOptions().getLanguage(),
