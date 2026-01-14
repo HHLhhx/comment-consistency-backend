@@ -56,7 +56,7 @@ public class AsyncConfig implements AsyncConfigurer {
     }
 
     private void logThreadPoolStatus(ThreadPoolTaskExecutor executor, String name) {
-        log.info("{} 配置: 核心线程数={}, 最大线程数={}, 队列容量={}, 保活时间={}",
+        log.debug("{} 配置: 核心线程数={}, 最大线程数={}, 队列容量={}, 保活时间={}",
                 name,
                 executor.getCorePoolSize(),
                 executor.getMaxPoolSize(),

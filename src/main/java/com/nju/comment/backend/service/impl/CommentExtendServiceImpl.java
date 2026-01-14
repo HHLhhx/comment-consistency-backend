@@ -66,7 +66,7 @@ public class CommentExtendServiceImpl implements CommentExtendService {
             log.info("批量注释生成请求处理完成，总耗时={}ms", Duration.between(startTime, Instant.now()).toMillis());
             return CompletableFuture.completedFuture(results);
         } catch (TimeoutException te) {
-            log.error("批量注释生成超时（{}ms），尝试取消子任务", LLM_TIMEOUT_SECONDS);
+            log.error("批量注释生成超时（{}ms），尝试取消子任务", LLM_TIMEOUT_SECONDS, te);
             future.forEach(f -> f.cancel(true));
             throw new ServiceException(ErrorCode.LLM_TIMEOUT, te);
         }  catch (InterruptedException ie) {
@@ -79,7 +79,7 @@ public class CommentExtendServiceImpl implements CommentExtendService {
             future.forEach(f -> f.cancel(true));
             throw new ServiceException(ErrorCode.LLM_EXECUTION_ERROR, ee);
         } catch (Exception ex) {
-            log.error("批量注释生成请求处理失败, 错误信息={}", ex.getMessage());
+            log.error("批量注释生成请求处理失败", ex);
             future.forEach(f -> f.cancel(true));
             throw new ServiceException(ErrorCode.LLM_SERVICE_ERROR, ex);
         }

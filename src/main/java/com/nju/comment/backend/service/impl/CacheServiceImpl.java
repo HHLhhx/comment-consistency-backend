@@ -24,21 +24,21 @@ public class CacheServiceImpl implements CacheService {
     @Override
     @Cacheable(value = "commentCache", key = "#key", unless = "#result == null")
     public CommentResponse getComment(String key) {
-        log.debug("缓存未命中，key：{}", key);
+        log.info("缓存未命中");
         return null;
     }
 
     @Override
     @CachePut(value = "commentCache", key = "#key")
     public CommentResponse saveComment(String key, CommentResponse commentResponse) {
-        log.debug("缓存生成的注释，key：{}，长度：{}", key, commentResponse.getGeneratedComment().length());
+        log.info("缓存生成的注释");
         return commentResponse;
     }
 
     @Override
     @CacheEvict(value = "commentCache", key = "#key")
     public void deleteComment(String key) {
-        log.debug("已删除缓存的注释，key：{}", key);
+        log.info("已删除缓存的注释");
     }
 
     @Override

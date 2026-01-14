@@ -20,6 +20,7 @@ public enum ErrorCode {
     LLM_UNAVAILABLE(2003, "LLM服务不可用"),
     LLM_INTERRUPTED(2004, "LLM服务被中断"),
     LLM_EXECUTION_ERROR(2005, "LLM执行错误"),
+    LLM_MODEL_FETCH_ERROR(2006, "LLM模型获取异常"),
 
     PROMPTS_SERVICE_ERROR(3001, "提示词服务错误"),
     PROMPTS_BUILD_ERROR(3002, "提示词构建错误"),

@@ -15,60 +15,11 @@ import java.util.List;
 public class CommentRequest {
 
     @NotBlank(message = "代码不能为空")
-    private String code;
+    private String oldMethod;
 
-    private String existingComment;
+    private String oldComment;
 
-    @NotBlank(message = "语言不能为空")
-    private String language;
+    private String newMethod;
 
-    private Context context;
-
-    @Builder.Default
-    private GenerationOptions options = GenerationOptions.defaultOptions();
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Context {
-        private String className;
-        private String packageName;
-        private List<MethodInfo> relatedMethods;
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class GenerationOptions {
-        @Builder.Default
-        private boolean includeParams = true;
-
-        @Builder.Default
-        private boolean includeReturn = true;
-
-        @Builder.Default
-        private boolean includeExceptions = false;
-
-        @Builder.Default
-        private String style = "Javadoc";
-
-        @Builder.Default
-        private String language = "Chinese";
-
-        public static GenerationOptions defaultOptions() {
-            return GenerationOptions.builder().build();
-        }
-    }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class MethodInfo {
-        private String name;
-        private String signature;
-        private String comment;
-    }
+    private String modelName;
 }

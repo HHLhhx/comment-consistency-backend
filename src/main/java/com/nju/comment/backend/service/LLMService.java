@@ -1,19 +1,18 @@
 package com.nju.comment.backend.service;
 
+import com.nju.comment.backend.dto.request.CommentRequest;
+
+import java.util.List;
+
 public interface LLMService {
 
     /**
      * 生成注释文本
      */
-    String generateComment(String prompt);
+    String generateComment(CommentRequest request);
 
     /**
-     * 检查服务健康状态
+     * 获取可用模型列表
      */
-    boolean isServiceHealthy();
-
-    /**
-     * 获取所使用的聊天模型名称
-     */
-    String getChatModelName();
+    List<String> getAvailableModels();
 }

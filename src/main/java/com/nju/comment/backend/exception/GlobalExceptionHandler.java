@@ -25,7 +25,7 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("参数错误");
 
-        log.error("参数合法验证失败: {}", errorMessage);
+        log.error("参数合法验证失败: {}", errorMessage, ex);
         return ResponseEntity.badRequest().body(ApiResponse.error(errorMessage, ErrorCode.PARAMETER_ERROR.getCode()));
     }
 
@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .orElse("参数错误");
 
-        log.error("参数约束验证失败: {}", errorMessage);
+        log.error("参数约束验证失败: {}", errorMessage, ex);
         return ResponseEntity.badRequest().body(ApiResponse.error(errorMessage, ErrorCode.PARAMETER_ERROR.getCode()));
     }
 
@@ -58,7 +58,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ServiceException.class)
     public ResponseEntity<ApiResponse<Object>> handleServiceException(ServiceException e) {
-        log.error("业务异常: code={}, message={}", e.getErrorCode().getCode(), e.getMessage());
+        log.error("业务异常: code={}, message={}, data={}", e.getErrorCode().getCode(), e.getMessage(), e.getData(), e);
 
         return ResponseEntity.status(getHttpStatus(e.getErrorCode()))
                 .body(ApiResponse.error(e.getMessage(), e.getErrorCode().getCode()));
@@ -79,12 +79,12 @@ public class GlobalExceptionHandler {
         }
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleException(Exception ex) {
-        log.error("服务器内部错误", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("服务器内部错误", ErrorCode.SYSTEM_ERROR.getCode()));
-    }
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiResponse<Object>> handleException(Exception ex) {
+//        log.error("服务器内部错误", ex);
+//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                .body(ApiResponse.error("服务器内部错误", ErrorCode.SYSTEM_ERROR.getCode()));
+//    }
 
     private HttpStatusCode getHttpStatus(ErrorCode errorCode) {
         return switch (errorCode) {

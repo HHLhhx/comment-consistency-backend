@@ -24,9 +24,6 @@
     </parent>
 
     <dependencies>
-        <!--    retry  and  prompt template    -->
-
-
         <!-- Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -37,6 +34,10 @@
         <dependency>
             <groupId>org.springframework.ai</groupId>
             <artifactId>spring-ai-starter-model-ollama</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-ollama</artifactId>
         </dependency>
 
         <!-- 缓存 -->
@@ -72,12 +73,6 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
-        </dependency>
-
-        <!-- 模板引擎 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-freemarker</artifactId>
         </dependency>
 
         <!-- JSON -->

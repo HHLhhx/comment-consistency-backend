@@ -11,9 +11,4 @@ public interface CommentBaseService {
      * 生成单个注释
      */
     CompletableFuture<CommentResponse> generateComment(CommentRequest request);
-
-    /**
-     * 检查服务健康状态
-     */
-    boolean isServiceHealthy();
 }

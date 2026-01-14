@@ -6,6 +6,7 @@ import com.nju.comment.backend.dto.response.CommentResponse;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.service.CommentBaseService;
 import com.nju.comment.backend.service.CommentExtendService;
+import com.nju.comment.backend.service.LLMService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,13 +33,15 @@ public class CommentController {
 
     private final CommentExtendService commentExtendService;
 
+    private final LLMService llmService;
+
     @Operation(summary = "生成注释", description = "为给定代码生成注释")
     @PostMapping("/generate")
     public ResponseEntity<ApiResponse<CommentResponse>> generateComment(
             @Valid @RequestBody CommentRequest commentRequest
     ) throws ExecutionException, InterruptedException {
 
-        log.info("收到注释生成请求，语言：{}", commentRequest.getLanguage());
+        log.info("收到注释生成请求，使用模型：{}", commentRequest.getModelName());
 
         CompletableFuture<ResponseEntity<ApiResponse<CommentResponse>>> result = commentBaseService.generateComment(commentRequest)
                 .thenApply(response -> {
@@ -56,7 +59,7 @@ public class CommentController {
     }
 
     @Operation(summary = "批量生成注释", description = "批量生成注释")
-    @PostMapping("batch-generate")
+    @PostMapping("/batch-generate")
     public ResponseEntity<ApiResponse<List<CommentResponse>>> batchGenerateComments(
             @Valid @RequestBody List<@Valid CommentRequest> commentRequests
     ) throws ExecutionException, InterruptedException {
@@ -80,19 +83,14 @@ public class CommentController {
         return result.get();
     }
 
-    @Operation(summary = "健康检查", description = "检查服务状态")
-    @GetMapping("/health")
-    public ResponseEntity<ApiResponse<Boolean>> health() {
-        boolean isHealthy = commentBaseService.isServiceHealthy();
+    @Operation(summary = "获取可用模型列表", description = "获取当前支持的所有语言模型列表")
+    @GetMapping("/models")
+    public ResponseEntity<ApiResponse<List<String>>> getAvailableModels() {
 
-        ApiResponse<Boolean> apiResponse = isHealthy
-                ? ApiResponse.success("注释生成服务正常", true)
-                : ApiResponse.error("注释生成服务不可用", HttpStatus.SERVICE_UNAVAILABLE);
+        log.info("收到获取可用模型请求");
 
-        return ResponseEntity.status(isHealthy
-                        ? HttpStatus.OK
-                        : HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(apiResponse);
+        List<String> availableModels = llmService.getAvailableModels();
+        return ResponseEntity.ok(ApiResponse.success(availableModels));
     }
 }
 

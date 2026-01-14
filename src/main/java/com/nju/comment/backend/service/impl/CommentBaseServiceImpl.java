@@ -7,7 +7,6 @@ import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CacheService;
 import com.nju.comment.backend.service.CommentBaseService;
 import com.nju.comment.backend.service.LLMService;
-import com.nju.comment.backend.service.PromptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -25,10 +24,8 @@ public class CommentBaseServiceImpl implements CommentBaseService {
 
     private final LLMService llmService;
 
-    private final PromptService promptService;
-
     private final CacheService cacheService;
-    
+
     @Override
     @Async("llmTaskExecutor")
     public CompletableFuture<CommentResponse> generateComment(CommentRequest request) {
@@ -47,13 +44,12 @@ public class CommentBaseServiceImpl implements CommentBaseService {
                 return CompletableFuture.completedFuture(cachedResponse);
             }
 
-            String prompt = promptService.buildPrompt(request);
-            String generatedComment = llmService.generateComment(prompt);
+            String generatedComment = llmService.generateComment(request);
             String processedComment = postProcessComment(generatedComment, request);
 
             CommentResponse response = CommentResponse.success(processedComment)
                     .withRequestId(requestId)
-                    .withModelUsed(llmService.getChatModelName())
+                    .withModelUsed(request.getModelName())
                     .withProcessingTime(Duration.between(startTime, Instant.now()).toMillis());
 
             cacheService.saveComment(key, response);
@@ -61,7 +57,7 @@ public class CommentBaseServiceImpl implements CommentBaseService {
             log.info("注释生成请求处理完成, requestId={}, 耗时={}ms", requestId, response.getProcessingTimeMs());
             return CompletableFuture.completedFuture(response);
         } catch (Exception e) {
-            log.error("注释生成请求处理失败, requestId={}, 错误信息={}", requestId, e.getMessage());
+            log.error("注释生成请求处理失败, requestId={}", requestId, e);
             throw new ServiceException(ErrorCode.COMMENT_SERVICE_ERROR, e);
         }
     }
@@ -72,18 +68,11 @@ public class CommentBaseServiceImpl implements CommentBaseService {
     }
 
     private String generateCommentCacheKey(CommentRequest request) {
-        return String.format("%s:%s:%s:%s:%s:%s:%s",
-                request.getLanguage(),
-                request.getOptions().getStyle(),
-                request.getOptions().getLanguage(),
-                request.getOptions().isIncludeParams(),
-                request.getOptions().isIncludeReturn(),
-                request.getOptions().isIncludeExceptions(),
-                request.getCode().hashCode());
-    }
-
-    @Override
-    public boolean isServiceHealthy() {
-        return llmService.isServiceHealthy();
+        return String.format("%s:%s:%s:%s",
+                request.getOldMethod(),
+                request.getOldComment(),
+                request.getNewMethod(),
+                request.getModelName()
+        );
     }
 }

@@ -1,60 +1,53 @@
 package com.nju.comment.backend.service.impl;
 
+import com.nju.comment.backend.component.OllamaModelFactory;
+import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.LLMService;
+import com.nju.comment.backend.service.PromptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class LLMServiceImpl implements LLMService {
 
-    private final ChatModel ollamaChatModel;
+    private final OllamaModelFactory ollamaModelFactory;
+
+    private final PromptService promptService;
 
     @Override
-    @Retryable(
-        retryFor = {ServiceException.class},
-        backoff = @Backoff(delay = 1000, multiplier = 2)
-    )
-    public String generateComment(String prompt) {
+    public String generateComment(CommentRequest request) {
         long startTime = System.currentTimeMillis();
 
+        ChatClient client = ollamaModelFactory.getModel(request.getModelName());
         try {
-            log.debug("调用LLM生成注释，prompt长度：{}", prompt.length());
+            log.info("调用LLM生成注释");
 
-            String result = ollamaChatModel.call(prompt);
+            String prompt = promptService.buildPrompt(request);
+            String result = client.prompt()
+                    .user(prompt)
+                    .call()
+                    .content();
 
             long duration = System.currentTimeMillis() - startTime;
             log.debug("LLM生成注释完成，耗时：{}ms，内容：\n{}", duration, result);
             return result;
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("LLM生成注释失败，耗时：{}ms", duration);
+            log.error("LLM生成注释失败，耗时：{}ms", duration, e);
             throw new ServiceException(ErrorCode.LLM_SERVICE_ERROR, e);
         }
     }
 
     @Override
-    public boolean isServiceHealthy() {
-        try {
-            log.info("LLM服务健康检查");
-            boolean result = ollamaChatModel.call("hello") != null;
-            log.info("LLM服务健康检查结果: {}", result ? "健康" : "不健康");
-            return result;
-        } catch (Exception e) {
-            log.warn("LLM服务健康检查失败: {}", e.getMessage());
-            throw new ServiceException(ErrorCode.LLM_UNAVAILABLE, e);
-        }
-    }
-
-    @Override
-    public String getChatModelName() {
-        return ollamaChatModel.getDefaultOptions().getModel();
+    public List<String> getAvailableModels() {
+        return ollamaModelFactory.getAvailableModels();
     }
 }

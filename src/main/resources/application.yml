@@ -12,17 +12,11 @@ spring:
     type: caffeine
     caffeine:
       spec: maximumSize=500,expireAfterWrite=1h
-  freemarker:
-    enabled: true
-    suffix: .ftl
-    charset: UTF-8
-    template-loader-path: classpath:/prompts/
-    cache: false
   ai:
     ollama:
-      base-url: http://localhost:11434
+      base-url: https://ollama.com
+      api-key: ${OLLAMA_API_KEY:}
       chat:
-        model: codellama:7b
         options:
           temperature: 0.2
           top-p: 0.9
@@ -64,8 +58,6 @@ logging:
 
 # 应用配置
 app:
-  prompt:
-    template-name: comment_template.ftl
   thread-pool:
     llm-pool:
       core-size: 20
