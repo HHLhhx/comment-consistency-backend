@@ -79,13 +79,6 @@ public class GlobalExceptionHandler {
         }
     }
 
-//    @ExceptionHandler(Exception.class)
-//    public ResponseEntity<ApiResponse<Object>> handleException(Exception ex) {
-//        log.error("服务器内部错误", ex);
-//        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                .body(ApiResponse.error("服务器内部错误", ErrorCode.SYSTEM_ERROR.getCode()));
-//    }
-
     private HttpStatusCode getHttpStatus(ErrorCode errorCode) {
         return switch (errorCode) {
             case SUCCESS ->  HttpStatus.OK;

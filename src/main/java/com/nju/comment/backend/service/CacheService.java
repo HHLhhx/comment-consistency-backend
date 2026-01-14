@@ -24,9 +24,4 @@ public interface CacheService {
      * 清空缓存
      */
     void clearCache();
-
-    /**
-     * 获取缓存对数
-     */
-    long getCommentCacheSize();
 }
