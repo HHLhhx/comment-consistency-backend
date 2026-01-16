@@ -2,6 +2,7 @@ package com.nju.comment.backend.component;
 
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
+import com.nju.comment.backend.service.CacheService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 public class OllamaModelFactory {
+
+    @Autowired
+    private CacheService cacheService;
 
     @Autowired
     private OllamaApi ollamaApi;
@@ -69,11 +74,27 @@ public class OllamaModelFactory {
 
     public List<String> getAvailableModels() {
         try {
+            List<String> models = cacheService.getModelsList("MODELS_LIST");
+            if (models != null && !models.isEmpty()) {
+                log.info("从缓存获取到 {} 个可用模型", models.size());
+                return models;
+            }
+
             OllamaApi.ListModelResponse listModelResponse = ollamaApi.listModels();
+            if (listModelResponse.models() == null || listModelResponse.models().isEmpty()) {
+                log.warn("未获取到任何可用模型");
+                return Collections.emptyList();
+            }
+
             log.info("获取到 {} 个可用模型", listModelResponse.models().size());
-            return listModelResponse.models().stream()
+
+            List<String> modelsList = listModelResponse.models().stream()
                     .map(OllamaApi.Model::name)
                     .toList();
+
+            cacheService.saveModelsList("MODELS_LIST", modelsList);
+
+            return modelsList;
         } catch (Exception e) {
             log.error("获取可用模型列表失败", e);
             throw new ServiceException(ErrorCode.LLM_MODEL_FETCH_ERROR, e);

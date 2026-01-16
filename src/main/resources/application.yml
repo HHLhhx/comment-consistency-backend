@@ -72,3 +72,6 @@ app:
     comment:
       max-size: 500
       ttl: 3600
+    modelsList:
+      max-size: 100
+      ttl: 60

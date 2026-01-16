@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class CacheConfig {
 
     private CacheConfigItem comment;
+    private CacheConfigItem modelsList;
 
     @Bean
     public CacheManager cacheManager() {
@@ -30,6 +31,15 @@ public class CacheConfig {
                     .recordStats();
 
             cacheManager.registerCustomCache("commentCache", commentCaffeine.build());
+        }
+
+        if (modelsList != null) {
+            Caffeine<Object, Object> modelsListCaffeine = Caffeine.newBuilder()
+                    .maximumSize(modelsList.getMaxSize())
+                    .expireAfterWrite(modelsList.getTtl(), TimeUnit.SECONDS)
+                    .recordStats();
+
+            cacheManager.registerCustomCache("modelsListCache", modelsListCaffeine.build());
         }
 
         return cacheManager;

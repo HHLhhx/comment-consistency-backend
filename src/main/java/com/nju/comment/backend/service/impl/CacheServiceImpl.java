@@ -8,13 +8,15 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @Slf4j
 public class CacheServiceImpl implements CacheService {
     @Override
     @Cacheable(value = "commentCache", key = "#key", unless = "#result == null")
     public CommentResponse getComment(String key) {
-        log.info("缓存未命中");
+        log.info("注释缓存未命中");
         return null;
     }
 
@@ -28,12 +30,26 @@ public class CacheServiceImpl implements CacheService {
     @Override
     @CacheEvict(value = "commentCache", key = "#key")
     public void deleteComment(String key) {
-        log.info("已删除缓存的注释");
+        log.info("已删除缓存");
     }
 
     @Override
     @CacheEvict(value = "commentCache", allEntries = true)
-    public void clearCache() {
+    public void clearCommentCache() {
         log.info("已清空注释缓存");
+    }
+
+    @Override
+    @Cacheable(value = "modelsCache", key = "#key", unless = "#result == null")
+    public List<String> getModelsList(String key) {
+        log.info("模型缓存未命中");
+        return null;
+    }
+
+    @Override
+    @CachePut(value = "modelsCache", key = "#key")
+    public List<String> saveModelsList(String key, List<String> modelsList) {
+        log.info("缓存模型列表");
+        return modelsList;
     }
 }
