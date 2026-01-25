@@ -20,4 +20,6 @@ public class CommentRequest {
     private String newMethod;
 
     private String modelName;
+
+    private String clientRequestId;
 }

@@ -51,6 +51,15 @@ public class CommentResponse {
                 .build();
     }
 
+    public static CommentResponse cancelled(String requestId) {
+        return CommentResponse.builder()
+                .success(false)
+                .errorMessage("请求已取消")
+                .requestId(requestId)
+                .timestamp(Instant.now())
+                .build();
+    }
+
     public CommentResponse withRequestId(String requestId) {
         this.requestId = requestId;
         return this;

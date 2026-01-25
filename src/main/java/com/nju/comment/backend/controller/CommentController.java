@@ -1,5 +1,7 @@
 package com.nju.comment.backend.controller;
 
+import com.nju.comment.backend.component.RequestCancelRegistry;
+import com.nju.comment.backend.dto.request.CancelRequest;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.ApiResponse;
 import com.nju.comment.backend.dto.response.CommentResponse;
@@ -30,10 +32,9 @@ import java.util.concurrent.ExecutionException;
 public class CommentController {
 
     private final CommentBaseService commentBaseService;
-
     private final CommentExtendService commentExtendService;
-
     private final LLMService llmService;
+    private final RequestCancelRegistry requestCancelRegistry;
 
     @Operation(summary = "生成注释", description = "为给定代码生成注释")
     @PostMapping("/generate")
@@ -81,6 +82,16 @@ public class CommentController {
                 });
 
         return result.get();
+    }
+
+    @Operation(summary = "取消注释生成", description = "取消指定 requestId 的注释生成任务，减轻后端与 Ollama 压力")
+    @PostMapping("/cancel")
+    public ResponseEntity<ApiResponse<Void>> cancelGenerate(@Valid @RequestBody CancelRequest cancelRequest) {
+
+        log.info("收到取消请求, requestId={}", cancelRequest.getRequestId());
+
+        requestCancelRegistry.cancel(cancelRequest.getRequestId());
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @Operation(summary = "获取可用模型列表", description = "获取当前支持的所有语言模型列表")
