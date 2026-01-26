@@ -38,6 +38,7 @@ public class AsyncConfig implements AsyncConfigurer {
 
         executor.setThreadFactory((r -> {
             Thread thread = new Thread(r);
+            thread.setName("llm-task-" + thread.getId());
             thread.setUncaughtExceptionHandler((t, e) ->
                     log.error("线程 {} 执行异常", t.getName(), e));
             return thread;
