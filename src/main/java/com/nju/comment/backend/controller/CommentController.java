@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 @RestController
 @RequestMapping("/comments")
@@ -38,13 +37,12 @@ public class CommentController {
 
     @Operation(summary = "生成注释", description = "为给定代码生成注释")
     @PostMapping("/generate")
-    public ResponseEntity<ApiResponse<CommentResponse>> generateComment(
+    public CompletableFuture<ResponseEntity<ApiResponse<CommentResponse>>> generateComment(
             @Valid @RequestBody CommentRequest commentRequest
-    ) throws ExecutionException, InterruptedException {
-
+    ) {
         log.info("收到注释生成请求，使用模型：{}", commentRequest.getModelName());
 
-        CompletableFuture<ResponseEntity<ApiResponse<CommentResponse>>> result = commentBaseService.generateComment(commentRequest)
+        return commentBaseService.generateComment(commentRequest)
                 .thenApply(response -> {
                     ApiResponse<CommentResponse> apiResponse = response.isSuccess()
                             ? ApiResponse.success("注释生成成功", response)
@@ -54,20 +52,23 @@ public class CommentController {
                                     ? HttpStatus.OK
                                     : HttpStatus.INTERNAL_SERVER_ERROR)
                             .body(apiResponse);
+                })
+                .exceptionally(ex -> {
+                    log.error("注释生成请求异常", ex);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(ApiResponse.error("服务异常", ErrorCode.COMMENT_SERVICE_ERROR.getCode()));
                 });
-
-        return result.get();
     }
 
     @Operation(summary = "批量生成注释", description = "批量生成注释")
     @PostMapping("/batch-generate")
-    public ResponseEntity<ApiResponse<List<CommentResponse>>> batchGenerateComments(
+    public CompletableFuture<ResponseEntity<ApiResponse<List<CommentResponse>>>> batchGenerateComments(
             @Valid @RequestBody List<@Valid CommentRequest> commentRequests
-    ) throws ExecutionException, InterruptedException {
+    ) {
 
         log.info("收到批量注释生成请求，数量：{}", commentRequests.size());
 
-        CompletableFuture<ResponseEntity<ApiResponse<List<CommentResponse>>>> result = commentExtendService.batchGenerateComments(commentRequests)
+        return commentExtendService.batchGenerateComments(commentRequests)
                 .thenApply(response -> {
                     boolean allSuccess = response.stream().allMatch(CommentResponse::isSuccess);
 
@@ -79,9 +80,12 @@ public class CommentController {
                                     ? HttpStatus.OK
                                     : HttpStatus.INTERNAL_SERVER_ERROR)
                             .body(apiResponse);
+                })
+                .exceptionally(ex -> {
+                    log.error("批量注释生成请求异常", ex);
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body(ApiResponse.error("服务异常", ErrorCode.COMMENT_SERVICE_ERROR.getCode()));
                 });
-
-        return result.get();
     }
 
     @Operation(summary = "取消注释生成", description = "取消指定 requestId 的注释生成任务，减轻后端与 Ollama 压力")

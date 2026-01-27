@@ -64,12 +64,32 @@ public class CommentBaseServiceImpl implements CommentBaseService {
 
             // 再次检查请求是否已被取消
             if (requestCancelRegistry.isCancelled(requestId)) {
+                log.warn("注释生成请求在缓存检查后被取消, requestId={}", requestId);
                 result.complete(CommentResponse.cancelled(requestId));
                 return result;
             }
 
-            // 调用 LLM 服务生成注释
-            String generatedComment = llmService.generateComment(request);
+            // 调用 LLM 服务生成注释（支持中断线程取消）
+            String generatedComment;
+            try {
+                generatedComment = llmService.generateComment(request);
+            } catch (Exception e) {
+                // 检查是否因取消被中断
+                if (Thread.currentThread().isInterrupted() || requestCancelRegistry.isCancelled(requestId)) {
+                    log.info("注释生成在LLM调用阶段被中断, requestId={}", requestId);
+                    result.complete(CommentResponse.cancelled(requestId));
+                    return result;
+                }
+                throw e;
+            }
+
+            // 再次检查是否在生成过程中被取消
+            if (requestCancelRegistry.isCancelled(requestId)) {
+                log.info("注释生成在后处理阶段被取消, requestId={}", requestId);
+                result.complete(CommentResponse.cancelled(requestId));
+                return result;
+            }
+
             String processedComment = postProcessComment(generatedComment);
 
             // 构建响应并缓存结果
@@ -79,6 +99,12 @@ public class CommentBaseServiceImpl implements CommentBaseService {
                     .withProcessingTime(Duration.between(startTime, Instant.now()).toMillis());
 
             cacheService.saveComment(key, response);
+
+            if (requestCancelRegistry.isCancelled(requestId)) {
+                log.info("注释生成在缓存保存后被取消, requestId={}", requestId);
+                result.complete(CommentResponse.cancelled(requestId));
+                return result;
+            }
 
             log.info("注释生成请求处理完成, requestId={}, 耗时={}ms", requestId, response.getProcessingTimeMs());
             result.complete(response);
