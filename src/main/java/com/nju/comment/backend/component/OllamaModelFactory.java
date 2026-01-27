@@ -4,12 +4,12 @@ import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CacheService;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
@@ -23,13 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class OllamaModelFactory {
 
-    @Autowired
-    private CacheService cacheService;
+    private final CacheService cacheService;
 
-    @Autowired
-    private OllamaApi ollamaApi;
+    private final OllamaApi ollamaApi;
 
     @Value("classpath:prompts/prompt_system.st")
     private Resource systemPromptResource;
@@ -66,10 +65,6 @@ public class OllamaModelFactory {
                     .defaultSystem(systemPrompt)
                     .build();
         });
-    }
-
-    public void clearCache() {
-        modelCache.clear();
     }
 
     public List<String> getAvailableModels() {

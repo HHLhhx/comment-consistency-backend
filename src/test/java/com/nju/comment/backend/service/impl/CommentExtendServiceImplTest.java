@@ -3,7 +3,6 @@ package com.nju.comment.backend.service.impl;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.CommentResponse;
 import com.nju.comment.backend.exception.ServiceException;
-import com.nju.comment.backend.service.CommentExtendService;
 import com.nju.comment.backend.service.LLMService;
 import com.nju.comment.backend.service.PromptService;
 import org.junit.jupiter.api.Test;

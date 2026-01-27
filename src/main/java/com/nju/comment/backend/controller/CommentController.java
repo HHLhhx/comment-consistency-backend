@@ -6,8 +6,7 @@ import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.ApiResponse;
 import com.nju.comment.backend.dto.response.CommentResponse;
 import com.nju.comment.backend.exception.ErrorCode;
-import com.nju.comment.backend.service.CommentBaseService;
-import com.nju.comment.backend.service.CommentExtendService;
+import com.nju.comment.backend.service.CommentService;
 import com.nju.comment.backend.service.LLMService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,6 +19,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -30,8 +30,7 @@ import java.util.concurrent.CompletableFuture;
 @Tag(name = "注释生成", description = "智能注释生成api")
 public class CommentController {
 
-    private final CommentBaseService commentBaseService;
-    private final CommentExtendService commentExtendService;
+    private final CommentService commentService;
     private final LLMService llmService;
     private final RequestCancelRegistry requestCancelRegistry;
 
@@ -42,49 +41,38 @@ public class CommentController {
     ) {
         log.info("收到注释生成请求，使用模型：{}", commentRequest.getModelName());
 
-        return commentBaseService.generateComment(commentRequest)
-                .thenApply(response -> {
+        return commentService.generateComment(commentRequest)
+                .handle((response, ex) -> {
+                    if (ex != null) {
+                        // 处理异常情况
+                        Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+
+                        // 检查是否是取消异常
+                        if (cause instanceof CancellationException) {
+                            log.info("注释生成请求被取消");
+                            CommentResponse cancelledResponse = CommentResponse.cancelled(
+                                    commentRequest.getClientRequestId());
+                            return ResponseEntity.ok(
+                                    ApiResponse.success("请求已取消", cancelledResponse));
+                        }
+
+                        // 其他异常
+                        log.error("注释生成请求异常", cause);
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ApiResponse.error("服务异常: " + cause.getMessage(),
+                                        ErrorCode.COMMENT_SERVICE_ERROR.getCode()));
+                    }
+
+                    // 正常响应
                     ApiResponse<CommentResponse> apiResponse = response.isSuccess()
                             ? ApiResponse.success("注释生成成功", response)
-                            : ApiResponse.error(response.getErrorMessage(), ErrorCode.COMMENT_SERVICE_ERROR.getCode());
+                            : ApiResponse.error(response.getErrorMessage(),
+                            ErrorCode.COMMENT_SERVICE_ERROR.getCode());
 
                     return ResponseEntity.status(response.isSuccess()
                                     ? HttpStatus.OK
                                     : HttpStatus.INTERNAL_SERVER_ERROR)
                             .body(apiResponse);
-                })
-                .exceptionally(ex -> {
-                    log.error("注释生成请求异常", ex);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(ApiResponse.error("服务异常", ErrorCode.COMMENT_SERVICE_ERROR.getCode()));
-                });
-    }
-
-    @Operation(summary = "批量生成注释", description = "批量生成注释")
-    @PostMapping("/batch-generate")
-    public CompletableFuture<ResponseEntity<ApiResponse<List<CommentResponse>>>> batchGenerateComments(
-            @Valid @RequestBody List<@Valid CommentRequest> commentRequests
-    ) {
-
-        log.info("收到批量注释生成请求，数量：{}", commentRequests.size());
-
-        return commentExtendService.batchGenerateComments(commentRequests)
-                .thenApply(response -> {
-                    boolean allSuccess = response.stream().allMatch(CommentResponse::isSuccess);
-
-                    ApiResponse<List<CommentResponse>> apiResponse = allSuccess
-                            ? ApiResponse.success("批量生成成功", response)
-                            : ApiResponse.error("部分注释生成失败", ErrorCode.COMMENT_SERVICE_ERROR.getCode());
-
-                    return ResponseEntity.status(allSuccess
-                                    ? HttpStatus.OK
-                                    : HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(apiResponse);
-                })
-                .exceptionally(ex -> {
-                    log.error("批量注释生成请求异常", ex);
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .body(ApiResponse.error("服务异常", ErrorCode.COMMENT_SERVICE_ERROR.getCode()));
                 });
     }
 

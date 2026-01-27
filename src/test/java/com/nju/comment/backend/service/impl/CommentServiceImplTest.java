@@ -21,7 +21,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CommentBaseServiceImplTest {
+class CommentServiceImplTest {
 
     @Mock
     private LLMService llmService;
@@ -30,7 +30,7 @@ class CommentBaseServiceImplTest {
     private CacheService cacheService;
 
     @InjectMocks
-    private CommentBaseServiceImpl commentService;
+    private CommentServiceImpl commentService;
 
     private CommentRequest request;
 

@@ -19,9 +19,6 @@ public class CommentResponse {
 
     private String generatedComment;
 
-    @Builder.Default
-    private List<String> alternativeComments = List.of();
-
     private String modelUsed;
 
     private Long processingTimeMs;

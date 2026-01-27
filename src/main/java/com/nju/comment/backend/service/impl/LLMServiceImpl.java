@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.util.List;
 
@@ -28,22 +29,78 @@ public class LLMServiceImpl implements LLMService {
 
         ChatClient client = ollamaModelFactory.getModel(request.getModelName());
         try {
+            // 检查线程中断状态
+            if (Thread.currentThread().isInterrupted()) {
+                log.info("LLM调用前检测到线程中断，requestId={}", request.getClientRequestId());
+                throw new InterruptedException("线程已被中断");
+            }
+
             log.info("调用LLM生成注释");
 
             String prompt = promptService.buildPrompt(request);
-            String result = client.prompt()
-                    .user(prompt)
-                    .call()
-                    .content();
 
+            try {
+                // 执行LLM调用，期间可被线程中断
+                String result = client.prompt()
+                        .user(prompt)
+                        .call()
+                        .content();
+
+                // 再次检查中断状态
+                if (Thread.currentThread().isInterrupted()) {
+                    log.info("LLM调用后检测到线程中断，requestId={}", request.getClientRequestId());
+                    throw new InterruptedException("线程已被中断");
+                }
+
+                long duration = System.currentTimeMillis() - startTime;
+                log.debug("LLM生成注释完成，耗时：{}ms，requestId：{}，内容：\n{}",
+                        duration, request.getClientRequestId(), result);
+                return result;
+            } catch (ResourceAccessException e) {
+                // Spring AI 包装异常：ResourceAccessException -> IOException -> InterruptedException
+                if (isInterrupted(e)) {
+                    long duration = System.currentTimeMillis() - startTime;
+                    log.info("LLM生成注释在执行中被中断，耗时：{}ms，requestId：{}",
+                            duration, request.getClientRequestId());
+                    Thread.currentThread().interrupt(); // 恢复中断状态
+                    throw new ServiceException(ErrorCode.LLM_INTERRUPTED, "请求已取消");
+                }
+                throw e;
+            } catch (InterruptedException e) {
+                // 线程在LLM调用期间被直接中断（在调用前）
+                long duration = System.currentTimeMillis() - startTime;
+                log.info("线程在LLM调用期间被直接中断，耗时：{}ms，requestId：{}",
+                        duration, request.getClientRequestId());
+                Thread.currentThread().interrupt(); // 恢复中断状态
+                throw new ServiceException(ErrorCode.LLM_INTERRUPTED, "请求已取消");
+            }
+        } catch (ServiceException e) {
+            throw e;
+        } catch (InterruptedException e) {
+            // 线程在调用前被中断
             long duration = System.currentTimeMillis() - startTime;
-            log.debug("LLM生成注释完成，耗时：{}ms，内容：\n{}", duration, result);
-            return result;
+            log.info("LLM生成注释被中断，耗时：{}ms，requestId：{}", duration, request.getClientRequestId());
+            Thread.currentThread().interrupt(); // 恢复中断状态
+            throw new ServiceException(ErrorCode.LLM_INTERRUPTED, "请求已取消");
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
-            log.error("LLM生成注释失败，耗时：{}ms", duration, e);
+            log.error("LLM生成注释失败，耗时：{}ms，requestId：{}", duration, request.getClientRequestId(), e);
             throw new ServiceException(ErrorCode.LLM_SERVICE_ERROR, e);
         }
+    }
+
+    /**
+     * 检查异常链中是否包含 InterruptedException（Spring AI包装异常，需要解包）
+     */
+    private boolean isInterrupted(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof InterruptedException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     @Override
