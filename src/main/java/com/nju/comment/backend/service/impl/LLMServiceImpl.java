@@ -25,6 +25,15 @@ public class LLMServiceImpl implements LLMService {
 
     @Override
     public String generateComment(CommentRequest request) {
+        //TODO: 待处理旧注释为空的情况
+        if (request.getOldComment() == null || request.getOldComment().isEmpty()) {
+            return """
+                   /**
+                    * TODO: Please add method description.
+                    */
+                   """;
+        }
+
         long startTime = System.currentTimeMillis();
 
         ChatClient client = ollamaModelFactory.getModel(request.getModelName());
