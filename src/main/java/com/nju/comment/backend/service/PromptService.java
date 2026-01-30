@@ -7,5 +7,10 @@ public interface PromptService {
     /**
      * 构建提示词
      */
-    String buildPrompt(CommentRequest request);
+    String buildUserPrompt(CommentRequest request);
+
+    /**
+     * 获取系统提示词
+     */
+    String getSystemPrompt(CommentRequest request);
 }

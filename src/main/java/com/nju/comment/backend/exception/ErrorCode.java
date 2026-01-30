@@ -23,6 +23,7 @@ public enum ErrorCode {
     LLM_MODEL_FETCH_ERROR(2006, "LLM模型获取异常"),
 
     PROMPTS_SERVICE_ERROR(3001, "提示词服务错误"),
+    PROMPTS_TEMPLATE_ERROR(3002, "提示词模板错误"),
     PROMPTS_BUILD_ERROR(3002, "提示词构建错误"),
 
     CACHE_SERVICE_ERROR(4001, "缓存服务错误"),
