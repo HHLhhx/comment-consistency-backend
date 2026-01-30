@@ -119,7 +119,6 @@ public class CommentServiceImpl implements CommentService {
         return generatedComment;
     }
 
-    //todo
     private String generateCommentCacheKey(CommentRequest request) {
         return String.format("%s:%s:%s:%s",
                 request.getOldMethod(),

@@ -21,7 +21,7 @@ class PromptServiceTest {
                 .newMethod("new code")
                 .build();
 
-        String prompt = promptService.buildUserPrompt(request);
+        String prompt = promptService.buildPrompt(request);
 
         assertNotNull(prompt);
         assertTrue(prompt.contains("sample code"));

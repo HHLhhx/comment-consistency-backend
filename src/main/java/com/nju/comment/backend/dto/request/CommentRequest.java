@@ -1,6 +1,5 @@
 package com.nju.comment.backend.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,11 +15,9 @@ public class CommentRequest {
 
     private String oldComment;
 
-    @NotBlank(message = "方法不能为空")
     private String newMethod;
 
     private String modelName;
 
-    @NotBlank(message = "requestId 不能为空")
     private String clientRequestId;
 }

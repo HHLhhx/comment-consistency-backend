@@ -25,30 +25,32 @@ public class LLMServiceImpl implements LLMService {
 
     @Override
     public String generateComment(CommentRequest request) {
-        if (request == null) {
-            throw new ServiceException(ErrorCode.PARAMETER_ERROR, "请求参数不能为空");
+        //TODO: 待处理旧注释为空的情况
+        if (request.getOldComment() == null || request.getOldComment().isEmpty()) {
+            return """
+                   /**
+                    * TODO: Please add method description.
+                    */
+                   """;
         }
 
         long startTime = System.currentTimeMillis();
 
         ChatClient client = ollamaModelFactory.getModel(request.getModelName());
         try {
-            log.info("调用LLM生成注释");
-
             // 检查线程中断状态
             if (Thread.currentThread().isInterrupted()) {
-                log.warn("LLM调用前检测到线程中断，requestId={}", request.getClientRequestId());
+                log.info("LLM调用前检测到线程中断，requestId={}", request.getClientRequestId());
                 throw new InterruptedException("线程已被中断");
             }
 
-            // 构建提示语
-            String system = promptService.getSystemPrompt(request);
-            String prompt = promptService.buildUserPrompt(request);
+            log.info("调用LLM生成注释");
+
+            String prompt = promptService.buildPrompt(request);
 
             try {
                 // 执行LLM调用，期间可被线程中断
                 String result = client.prompt()
-                        .system(system)
                         .user(prompt)
                         .call()
                         .content();

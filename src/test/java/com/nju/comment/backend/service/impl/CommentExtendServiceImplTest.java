@@ -78,8 +78,8 @@ class CommentExtendServiceImplTest {
 //        String comment1 = "Comment-1";
 //        String comment2 = "Comment-2";
 //
-//        when(promptService.buildUserPrompt(request1)).thenReturn(prompt1);
-//        when(promptService.buildUserPrompt(request2)).thenReturn(prompt2);
+//        when(promptService.buildPrompt(request1)).thenReturn(prompt1);
+//        when(promptService.buildPrompt(request2)).thenReturn(prompt2);
 //        when(llmService.generateComment(request1)).thenReturn(comment1);
 //        when(llmService.generateComment(request2)).thenReturn(comment2);
 //
@@ -98,8 +98,8 @@ class CommentExtendServiceImplTest {
 //        assertTrue(generated.contains(comment1));
 //        assertTrue(generated.contains(comment2));
 //
-//        verify(promptService).buildUserPrompt(request1);
-//        verify(promptService).buildUserPrompt(request2);
+//        verify(promptService).buildPrompt(request1);
+//        verify(promptService).buildPrompt(request2);
 //        verify(llmService).generateComment(request1);
 //        verify(llmService).generateComment(request2);
 //    }
