@@ -25,13 +25,8 @@ public class LLMServiceImpl implements LLMService {
 
     @Override
     public String generateComment(CommentRequest request) {
-        //TODO: 待处理旧注释为空的情况
-        if (request.getOldComment() == null || request.getOldComment().isEmpty()) {
-            return """
-                   /**
-                    * TODO: Please add method description.
-                    */
-                   """;
+        if (request == null) {
+            throw new ServiceException(ErrorCode.PARAMETER_ERROR, "请求参数不能为空");
         }
 
         long startTime = System.currentTimeMillis();
@@ -46,12 +41,14 @@ public class LLMServiceImpl implements LLMService {
 
             log.info("调用LLM生成注释");
 
-            String prompt = promptService.buildPrompt(request);
+            String systemPrompt = promptService.getSystemPrompt(request);
+            String userPrompt = promptService.buildUserPrompt(request);
 
             try {
                 // 执行LLM调用，期间可被线程中断
                 String result = client.prompt()
-                        .user(prompt)
+                        .system(systemPrompt)
+                        .user(userPrompt)
                         .call()
                         .content();
 

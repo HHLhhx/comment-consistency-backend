@@ -5,7 +5,12 @@ import com.nju.comment.backend.dto.request.CommentRequest;
 public interface PromptService {
 
     /**
-     * 构建提示词
+     * 构建用户提示语
      */
-    String buildPrompt(CommentRequest request);
+    String buildUserPrompt(CommentRequest request);
+
+    /**
+     * 构建系统提示语
+     */
+    String getSystemPrompt(CommentRequest request);
 }

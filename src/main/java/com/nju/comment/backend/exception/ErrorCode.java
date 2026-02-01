@@ -24,6 +24,7 @@ public enum ErrorCode {
 
     PROMPTS_SERVICE_ERROR(3001, "提示词服务错误"),
     PROMPTS_BUILD_ERROR(3002, "提示词构建错误"),
+    PROMPTS_READ_ERROR(3003, "提示词读取错误"),
 
     CACHE_SERVICE_ERROR(4001, "缓存服务错误"),
     CACHE_SIZE_GET_ERROR(4002, "缓存大小获取错误"),

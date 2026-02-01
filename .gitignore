@@ -5,6 +5,7 @@ target/
 !**/src/test/**/target/
 logs/
 note.md
+bin
 
 ### STS ###
 .apt_generated
