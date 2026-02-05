@@ -40,14 +40,14 @@ public class CacheServiceImpl implements CacheService {
     }
 
     @Override
-    @Cacheable(value = "modelsCache", key = "#key", unless = "#result == null")
+    @Cacheable(value = "modelCache", key = "#key", unless = "#result == null")
     public List<String> getModelsList(String key) {
         log.info("模型缓存未命中");
         return null;
     }
 
     @Override
-    @CachePut(value = "modelsCache", key = "#key")
+    @CachePut(value = "modelCache", key = "#key")
     public List<String> saveModelsList(String key, List<String> modelsList) {
         log.info("缓存模型列表");
         return modelsList;

@@ -8,19 +8,6 @@ server:
 spring:
   application:
     name: comment-backend
-  cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=1h
-  ai:
-    ollama:
-      base-url: https://ollama.com
-      api-key: ${OLLAMA_API_KEY:}
-      chat:
-        options:
-          temperature: 0.2
-          top-p: 0.9
-          top-k: 40
 
 # 监控配置
 management:
@@ -65,6 +52,14 @@ app:
       queue-capacity: 1000
       keep-alive: 60
       thread-name-prefix: llm-executor-
+  ai:
+    ollama:
+      chat:
+        base-url: https://ollama.com
+        api-key: ${OLLAMA_API_KEY:}
+      embedding:
+        base-url: http://localhost:11434
+        model: "qwen3-embedding:0.6b"
   cache:
     comment:
       max-size: 500

@@ -39,7 +39,7 @@ public class CacheConfig {
                     .expireAfterWrite(modelsList.getTtl(), TimeUnit.SECONDS)
                     .recordStats();
 
-            cacheManager.registerCustomCache("modelsListCache", modelsListCaffeine.build());
+            cacheManager.registerCustomCache("modelCache", modelsListCaffeine.build());
         }
 
         return cacheManager;

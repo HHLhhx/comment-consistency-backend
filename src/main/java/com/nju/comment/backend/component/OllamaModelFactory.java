@@ -3,9 +3,11 @@ package com.nju.comment.backend.component;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CacheService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
@@ -23,15 +25,18 @@ public class OllamaModelFactory {
 
     private final CacheService cacheService;
 
-    private final OllamaApi ollamaApi;
+    private final OllamaApi chatOllamaApi;
 
     private final Map<String, ChatClient> modelCache = new ConcurrentHashMap<>();
 
-    public ChatClient getModel(String modelName) {
+    @Getter
+    private final EmbeddingModel embeddingModel;
+
+    public ChatClient getChatModelClient(String modelName) {
         return modelCache.computeIfAbsent(modelName, name -> {
             log.info("创建Ollama模型实例: {}", name);
             OllamaChatModel ollamaChatModel = OllamaChatModel.builder()
-                    .ollamaApi(ollamaApi)
+                    .ollamaApi(chatOllamaApi)
                     .defaultOptions(
                             OllamaOptions.builder()
                                     .model(name)
@@ -43,7 +48,7 @@ public class OllamaModelFactory {
         });
     }
 
-    public List<String> getAvailableModels() {
+    public List<String> getAvailableChatModels() {
         try {
             List<String> models = cacheService.getModelsList("MODELS_LIST");
             if (models != null && !models.isEmpty()) {
@@ -51,7 +56,7 @@ public class OllamaModelFactory {
                 return models;
             }
 
-            OllamaApi.ListModelResponse listModelResponse = ollamaApi.listModels();
+            OllamaApi.ListModelResponse listModelResponse = chatOllamaApi.listModels();
             if (listModelResponse.models() == null || listModelResponse.models().isEmpty()) {
                 log.warn("未获取到任何可用模型");
                 return Collections.emptyList();

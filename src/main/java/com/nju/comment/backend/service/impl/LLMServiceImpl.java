@@ -31,7 +31,7 @@ public class LLMServiceImpl implements LLMService {
 
         long startTime = System.currentTimeMillis();
 
-        ChatClient client = ollamaModelFactory.getModel(request.getModelName());
+        ChatClient client = ollamaModelFactory.getChatModelClient(request.getModelName());
         try {
             // 检查线程中断状态
             if (Thread.currentThread().isInterrupted()) {
@@ -111,6 +111,6 @@ public class LLMServiceImpl implements LLMService {
 
     @Override
     public List<String> getAvailableModels() {
-        return ollamaModelFactory.getAvailableModels();
+        return ollamaModelFactory.getAvailableChatModels();
     }
 }

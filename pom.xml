@@ -36,6 +36,12 @@
             <artifactId>spring-ai-starter-model-ollama</artifactId>
         </dependency>
 
+        <!-- Milvus -->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.ai</groupId>-->
+<!--            <artifactId>spring-ai-starter-vector-store-milvus</artifactId>-->
+<!--        </dependency>-->
+
         <!-- 缓存 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
