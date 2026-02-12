@@ -8,6 +8,21 @@ server:
 spring:
   application:
     name: comment-backend
+  ai:
+    vectorstore:
+      milvus:
+        client:
+          host: "localhost"
+          port: 19530
+        databaseName: "test"
+        collectionName: "vector_store_test"
+        initialize-schema: true
+        embeddingDimension: 1024
+        indexType: IVF_FLAT
+        metricType: COSINE
+        auto-id: true
+        embedding-field-name: "vector"
+        content-field-name: "content"
 
 # 监控配置
 management:
@@ -60,6 +75,7 @@ app:
       embedding:
         base-url: http://localhost:11434
         model: "qwen3-embedding:0.6b"
+        enable: false
   cache:
     comment:
       max-size: 500

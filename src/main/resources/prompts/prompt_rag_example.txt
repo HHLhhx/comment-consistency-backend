@@ -1,0 +1,11 @@
+The content of the original code is as follows:
+{old_method}
+
+The content of the updated code is as follows:
+{new_method}
+
+The original comment is as follows:
+{old_comment}
+
+The updated comment is as follows:
+{new_comment}

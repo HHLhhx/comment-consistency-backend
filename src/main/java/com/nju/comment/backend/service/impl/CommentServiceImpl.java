@@ -120,11 +120,12 @@ public class CommentServiceImpl implements CommentService {
     }
 
     private String generateCommentCacheKey(CommentRequest request) {
-        return String.format("%s:%s:%s:%s",
+        return String.format("%s:%s:%s:%s:%s",
                 request.getOldMethod(),
                 request.getOldComment(),
                 request.getNewMethod(),
-                request.getModelName()
+                request.getModelName(),
+                request.isRag()
         );
     }
 }

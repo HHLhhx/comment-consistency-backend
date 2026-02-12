@@ -30,7 +30,9 @@ public enum ErrorCode {
     CACHE_SIZE_GET_ERROR(4002, "缓存大小获取错误"),
 
     COMMENT_SERVICE_ERROR(5001, "注释服务错误"),
-    COMMENT_REQUEST_NUM_EXCEEDED(5002, "注释请求数量超过限制");
+    COMMENT_REQUEST_NUM_EXCEEDED(5002, "注释请求数量超过限制"),
+
+    VECTORSTORE_INIT_ERROR(6001, "向量数据库存储初始化错误");
 
 
     private final int code;

@@ -23,4 +23,8 @@ public class CommentRequest {
 
     @NotBlank(message = "requestId 不能为空")
     private String clientRequestId;
+
+    private boolean rag;
+
+    private String ragExample;
 }
