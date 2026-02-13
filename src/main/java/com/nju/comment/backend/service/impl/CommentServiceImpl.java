@@ -40,8 +40,8 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CompletableFuture<CommentResponse> generateComment(CommentRequest request) {
         // 获取或生成请求ID
-        String requestId = request.getClientRequestId() != null && !request.getClientRequestId().isBlank()
-                ? request.getClientRequestId()
+        String requestId = request.getRequestId() != null && !request.getRagExample().isBlank()
+                ? request.getRequestId()
                 : UUID.randomUUID().toString();
 
         long timeoutMs = resolveTimeoutMs(request);

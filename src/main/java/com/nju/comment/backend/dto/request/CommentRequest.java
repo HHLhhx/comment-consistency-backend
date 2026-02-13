@@ -23,7 +23,7 @@ public class CommentRequest {
     private String modelName;
 
     @NotBlank(message = "requestId 不能为空")
-    private String clientRequestId;
+    private String requestId;
 
     @Min(value = 1, message = "timeoutMs 必须大于 0")
     private Long timeoutMs;

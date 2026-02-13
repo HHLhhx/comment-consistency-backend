@@ -3,8 +3,7 @@ package com.nju.comment.backend.service.impl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nju.comment.backend.dto.request.CommentRequest;
-import com.nju.comment.backend.exception.ErrorCode;
-import com.nju.comment.backend.exception.ServiceException;
+import com.nju.comment.backend.exception.*;
 import com.nju.comment.backend.service.PromptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.client.ResourceAccessException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -70,8 +70,8 @@ public class PromptServiceImpl implements PromptService {
                 log.debug("注释更新提示词构建完成，内容:\n{}", contents);
                 return contents;
             } catch (Exception e) {
-                log.error("构建提示词失败", e);
-                throw new ServiceException(ErrorCode.PROMPTS_BUILD_ERROR, e);
+                log.error("构建更新注释提示词失败", e);
+                throw new PromptException(ErrorCode.PROMPT_BUILD_ERROR, "构建更新注释提示词失败", e);
             }
         } else {
             // 生成注释场景
@@ -83,8 +83,8 @@ public class PromptServiceImpl implements PromptService {
                 log.debug("注释生成提示词构建完成，内容:\n{}", prompt.getContents());
                 return prompt.getContents();
             } catch (Exception e) {
-                log.error("构建提示词失败", e);
-                throw new ServiceException(ErrorCode.PROMPTS_BUILD_ERROR, e);
+                log.error("构建生成注释提示词失败", e);
+                throw new PromptException(ErrorCode.PROMPT_BUILD_ERROR, "构建生成注释提示词失败", e);
             }
         }
     }
@@ -103,18 +103,42 @@ public class PromptServiceImpl implements PromptService {
         }
 
         long startTime = System.currentTimeMillis();
-        String query = buildQueryForRAG(request);
-        List<Document> top3 = vectorStore.similaritySearch(
-                SearchRequest.builder()
-                        .query(query)
-                        .topK(3)
-                        .build()
-        );
-        long endTime = System.currentTimeMillis();
-        log.info("RAG检索完成，耗时：{}ms", endTime - startTime);
+        try {
+            String query = buildQueryForRAG(request);
+            List<Document> top3 = vectorStore.similaritySearch(
+                    SearchRequest.builder()
+                            .query(query)
+                            .topK(3)
+                            .build()
+            );
+            long endTime = System.currentTimeMillis();
+            log.info("RAG检索完成，耗时：{}ms", endTime - startTime);
 
-        String ragExamples = buildRagExamples(top3);
-        request.setRagExample(ragExamples);
+            String ragExamples = buildRagExamples(top3);
+            request.setRagExample(ragExamples);
+        } catch (ResourceAccessException e) {
+            if (isInterrupted(e)) {
+                log.info("RAG检索在执行中被中断，耗时：{}ms，requestId={}",
+                        System.currentTimeMillis() - startTime, request.getRequestId());
+                throw new VectorStoreException(ErrorCode.VECTOR_STORE_INTERRUPTED, "RAG检索已取消", e);
+            }
+            log.error("RAG检索失败", e);
+            throw new VectorStoreException(ErrorCode.VECTOR_STORE_QUERY_ERROR, "RAG检索失败", e);
+        } catch (Exception e) {
+            log.error("RAG检索失败", e);
+            throw new VectorStoreException(ErrorCode.VECTOR_STORE_QUERY_ERROR, "RAG检索失败", e);
+        }
+    }
+
+    private boolean isInterrupted(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof InterruptedException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private String buildQueryForRAG(CommentRequest request) {
@@ -179,16 +203,16 @@ public class PromptServiceImpl implements PromptService {
             try (InputStream is = systemCommentUpdatePrompt.getInputStream()) {
                 return StreamUtils.copyToString(is, Charset.defaultCharset());
             } catch (IOException ex) {
-                log.error("读取系统提示词失败", ex);
-                throw new ServiceException(ErrorCode.PROMPTS_READ_ERROR, ex);
+                log.error("读取更新注释系统提示词失败", ex);
+                throw new PromptException(ErrorCode.PROMPT_TEMPLATE_READ_ERROR, "读取更新注释系统提示词失败", ex);
             }
         } else {
             // 生成注释场景
             try (InputStream is = systemCommentGeneratePrompt.getInputStream()) {
                 return StreamUtils.copyToString(is, Charset.defaultCharset());
             } catch (IOException ex) {
-                log.error("读取系统提示词失败", ex);
-                throw new ServiceException(ErrorCode.PROMPTS_READ_ERROR, ex);
+                log.error("读取生成注释系统提示词失败", ex);
+                throw new PromptException(ErrorCode.PROMPT_TEMPLATE_READ_ERROR, "读取生成注释系统提示词失败", ex);
             }
         }
     }

@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nju.comment.backend.exception.ErrorCode;
-import com.nju.comment.backend.exception.ServiceException;
+import com.nju.comment.backend.exception.VectorStoreException;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,8 @@ public class VectorStoreInitializer {
                 vectorStore.add(docs);
                 System.out.println("add complete");
             } catch (IOException e) {
-                throw new ServiceException(ErrorCode.VECTORSTORE_INIT_ERROR, e);
+                log.error("向量数据库初始化失败", e);
+                throw new VectorStoreException(ErrorCode.VECTOR_STORE_INIT_ERROR, "向量数据库初始化失败", e);
             }
         }
         log.info("VectorStore init complete.");

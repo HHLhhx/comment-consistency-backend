@@ -1,7 +1,7 @@
 package com.nju.comment.backend.component;
 
 import com.nju.comment.backend.exception.ErrorCode;
-import com.nju.comment.backend.exception.ServiceException;
+import com.nju.comment.backend.exception.LLMException;
 import com.nju.comment.backend.service.CacheService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -73,7 +73,7 @@ public class OllamaModelFactory {
             return modelsList;
         } catch (Exception e) {
             log.error("获取可用模型列表失败", e);
-            throw new ServiceException(ErrorCode.LLM_MODEL_FETCH_ERROR, e);
+            throw new LLMException(ErrorCode.LLM_MODEL_FETCH_ERROR, "获取LLM模型列表失败", e);
         }
     }
 }

@@ -69,7 +69,7 @@ app:
       thread-name-prefix: llm-executor-
   ai:
     llm:
-      timeout-ms: 1000
+      timeout-ms: 30000
     ollama:
       chat:
         base-url: https://ollama.com
