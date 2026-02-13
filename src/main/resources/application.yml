@@ -68,6 +68,8 @@ app:
       keep-alive: 60
       thread-name-prefix: llm-executor-
   ai:
+    llm:
+      timeout-ms: 1000
     ollama:
       chat:
         base-url: https://ollama.com

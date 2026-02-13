@@ -41,10 +41,10 @@ public class LLMServiceImpl implements LLMService {
 
             log.info("调用LLM生成注释");
 
-            String systemPrompt = promptService.getSystemPrompt(request);
-            String userPrompt = promptService.buildUserPrompt(request);
-
             try {
+                String systemPrompt = promptService.getSystemPrompt(request);
+                String userPrompt = promptService.buildUserPrompt(request);
+
                 // 执行LLM调用，期间可被线程中断
                 String result = client.prompt()
                         .system(systemPrompt)

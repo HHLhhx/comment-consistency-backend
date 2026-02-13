@@ -17,7 +17,12 @@ public class RequestCancelRegistry {
     private final Map<String, CompletableFuture<?>> inFlightFutures = new ConcurrentHashMap<>();
     private final Map<String, Thread> executingThreads = new ConcurrentHashMap<>();
     private final Map<String, Boolean> cancelledIds = new ConcurrentHashMap<>();
+    private final Map<String, Boolean> timedOutIds = new ConcurrentHashMap<>();
 
+    /**
+     * 注册正在执行的 Future 任务，供取消时调用。
+     * 同时注册一个回调，在任务完成后自动清理注册信息，避免内存泄漏。
+     */
     public void register(String requestId, CompletableFuture<?> future) {
         if (requestId == null || requestId.isBlank()) return;
         inFlightFutures.put(requestId, future);
@@ -32,11 +37,16 @@ public class RequestCancelRegistry {
         executingThreads.put(requestId, thread);
     }
 
+    /**
+     * 取消完成后或任务完成后清理注册信息，避免内存泄漏
+     * @param requestId 请求ID
+     */
     public void unregister(String requestId) {
         if (requestId == null || requestId.isBlank()) return;
         inFlightFutures.remove(requestId);
         executingThreads.remove(requestId);
         cancelledIds.remove(requestId);
+        timedOutIds.remove(requestId);
     }
 
     /**
@@ -49,11 +59,7 @@ public class RequestCancelRegistry {
         cancelledIds.put(requestId, Boolean.TRUE);
 
         // 直接中断执行线程（优先级最高，用于中断阻塞I/O调用如LLM网络请求）
-        Thread thread = executingThreads.get(requestId);
-        if (thread != null && thread.isAlive()) {
-            thread.interrupt();
-            log.info("已直接中断执行线程，requestId={}，thread={}", requestId, thread.getName());
-        }
+        interruptThread(requestId, "CANCEL");
 
         // 同时取消Future
         CompletableFuture<?> f = inFlightFutures.get(requestId);
@@ -67,7 +73,28 @@ public class RequestCancelRegistry {
         }
     }
 
+    /**
+     * 标记为超时，并中断执行线程，但不取消 Future（由上层决定返回超时响应）。
+     */
+    public void timeout(String requestId) {
+        if (requestId == null || requestId.isBlank()) return;
+        timedOutIds.put(requestId, Boolean.TRUE);
+        interruptThread(requestId, "TIMEOUT");
+    }
+
     public boolean isCancelled(String requestId) {
         return requestId != null && Boolean.TRUE.equals(cancelledIds.get(requestId));
+    }
+
+    public boolean isTimedOut(String requestId) {
+        return requestId != null && Boolean.TRUE.equals(timedOutIds.get(requestId));
+    }
+
+    private void interruptThread(String requestId, String reason) {
+        Thread thread = executingThreads.get(requestId);
+        if (thread != null && thread.isAlive()) {
+            thread.interrupt();
+            log.info("已直接中断执行线程，reason={}，requestId={}，thread={}", reason, requestId, thread.getName());
+        }
     }
 }

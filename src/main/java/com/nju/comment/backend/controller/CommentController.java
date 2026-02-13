@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 @RestController
 @RequestMapping("/comments")
@@ -54,6 +55,14 @@ public class CommentController {
                                     commentRequest.getClientRequestId());
                             return ResponseEntity.ok(
                                     ApiResponse.success("请求已取消", cancelledResponse));
+                        }
+
+                        // 检查是否是超时异常
+                        if (cause instanceof TimeoutException) {
+                            log.info("注释生成请求超时");
+                            return ResponseEntity.status(HttpStatus.REQUEST_TIMEOUT)
+                                    .body(ApiResponse.error("LLM调用超时",
+                                            ErrorCode.LLM_TIMEOUT.getCode()));
                         }
 
                         // 其他异常

@@ -1,6 +1,7 @@
 package com.nju.comment.backend.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +24,9 @@ public class CommentRequest {
 
     @NotBlank(message = "requestId 不能为空")
     private String clientRequestId;
+
+    @Min(value = 1, message = "timeoutMs 必须大于 0")
+    private Long timeoutMs;
 
     private boolean rag;
 

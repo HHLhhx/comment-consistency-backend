@@ -10,6 +10,7 @@ import com.nju.comment.backend.service.CommentService;
 import com.nju.comment.backend.service.LLMService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +18,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
@@ -27,6 +32,10 @@ public class CommentServiceImpl implements CommentService {
     private final CacheService cacheService;
     private final RequestCancelRegistry requestCancelRegistry;
     private final ThreadPoolTaskExecutor llmTaskExecutor;
+    private final ScheduledExecutorService llmTimeoutScheduler;
+
+    @Value("${app.ai.llm.timeout-ms:30000}")
+    private long defaultTimeoutMs;
 
     @Override
     public CompletableFuture<CommentResponse> generateComment(CommentRequest request) {
@@ -34,6 +43,8 @@ public class CommentServiceImpl implements CommentService {
         String requestId = request.getClientRequestId() != null && !request.getClientRequestId().isBlank()
                 ? request.getClientRequestId()
                 : UUID.randomUUID().toString();
+
+        long timeoutMs = resolveTimeoutMs(request);
 
         // 使用专用线程池执行，并将真正执行的 Future 注册到取消管理器，确保 cancel(true) 能中断线程
         CompletableFuture<CommentResponse> future = CompletableFuture.supplyAsync(() -> {
@@ -44,7 +55,7 @@ public class CommentServiceImpl implements CommentService {
                 log.info("开始处理注释生成请求, requestId={}, thread={}", requestId, Thread.currentThread().getName());
 
                 // 检查请求是否已被取消
-                if (requestCancelRegistry.isCancelled(requestId)) {
+                if (isStopped(requestId)) {
                     log.warn("注释生成请求已被取消, requestId={}", requestId);
                     return CommentResponse.cancelled(requestId);
                 }
@@ -60,7 +71,7 @@ public class CommentServiceImpl implements CommentService {
                 }
 
                 // 再次检查请求是否已被取消
-                if (requestCancelRegistry.isCancelled(requestId)) {
+                if (isStopped(requestId)) {
                     log.warn("注释生成请求在缓存检查后被取消, requestId={}", requestId);
                     return CommentResponse.cancelled(requestId);
                 }
@@ -72,7 +83,7 @@ public class CommentServiceImpl implements CommentService {
                 } catch (ServiceException e) {
                     // 如果是中断导致的异常，按取消处理
                     if (ErrorCode.LLM_INTERRUPTED.getCode() == e.getErrorCode().getCode() ||
-                            requestCancelRegistry.isCancelled(requestId) ||
+                            isStopped(requestId) ||
                             Thread.currentThread().isInterrupted()) {
                         log.info("注释生成在LLM调用阶段被中断, requestId={}", requestId);
                         return CommentResponse.cancelled(requestId);
@@ -82,7 +93,7 @@ public class CommentServiceImpl implements CommentService {
                 }
 
                 // 再次检查是否在生成过程中被取消
-                if (requestCancelRegistry.isCancelled(requestId)) {
+                if (isStopped(requestId)) {
                     log.info("注释生成在后处理阶段被取消, requestId={}", requestId);
                     return CommentResponse.cancelled(requestId);
                 }
@@ -97,7 +108,7 @@ public class CommentServiceImpl implements CommentService {
 
                 cacheService.saveComment(key, response);
 
-                if (requestCancelRegistry.isCancelled(requestId)) {
+                if (isStopped(requestId)) {
                     log.info("注释生成在缓存保存后被取消, requestId={}", requestId);
                     return CommentResponse.cancelled(requestId);
                 }
@@ -110,6 +121,18 @@ public class CommentServiceImpl implements CommentService {
             }
         }, llmTaskExecutor);
 
+        // 设置超时任务，超时后如果 Future 还未完成，则标记请求为超时并完成 Future 异常
+        ScheduledFuture<?> timeoutFuture = llmTimeoutScheduler.schedule(() -> {
+            if (future.isDone()) {
+                return;
+            }
+            log.warn("注释生成请求超时，requestId={}，timeoutMs={}", requestId, timeoutMs);
+            requestCancelRegistry.timeout(requestId);
+            future.completeExceptionally(new TimeoutException("LLM调用超时"));
+        }, timeoutMs, TimeUnit.MILLISECONDS);
+
+        future.whenComplete((r, ex) -> timeoutFuture.cancel(false));
+
         requestCancelRegistry.register(requestId, future);
         return future;
     }
@@ -117,6 +140,19 @@ public class CommentServiceImpl implements CommentService {
     private String postProcessComment(String generatedComment) {
         //TODO
         return generatedComment;
+    }
+
+    private boolean isStopped(String requestId) {
+        return requestCancelRegistry.isCancelled(requestId)
+            || requestCancelRegistry.isTimedOut(requestId)
+                || Thread.currentThread().isInterrupted();
+    }
+
+    private long resolveTimeoutMs(CommentRequest request) {
+        if (request.getTimeoutMs() != null && request.getTimeoutMs() > 0) {
+            return request.getTimeoutMs();
+        }
+        return defaultTimeoutMs;
     }
 
     private String generateCommentCacheKey(CommentRequest request) {

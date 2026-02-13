@@ -11,6 +11,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Configuration
@@ -54,6 +56,17 @@ public class AsyncConfig implements AsyncConfigurer {
     @Override
     public AsyncUncaughtExceptionHandler getAsyncUncaughtExceptionHandler() {
         return new CustomAsyncExceptionHandler();
+    }
+
+    @Bean(name = "llmTimeoutScheduler")
+    public ScheduledExecutorService llmTimeoutScheduler() {
+        return Executors.newScheduledThreadPool(2, r -> {
+            Thread thread = new Thread(r);
+            thread.setName("llm-timeout-" + thread.getId());
+            thread.setUncaughtExceptionHandler((t, e) ->
+                    log.error("超时调度线程 {} 执行异常", t.getName(), e));
+            return thread;
+        });
     }
 
     private void logThreadPoolStatus(ThreadPoolTaskExecutor executor, String name) {
