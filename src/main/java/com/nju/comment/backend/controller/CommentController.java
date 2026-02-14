@@ -52,7 +52,7 @@ public class CommentController {
                         if (cause instanceof CancellationException) {
                             log.info("注释生成请求被取消");
                             CommentResponse cancelledResponse = CommentResponse.cancelled(
-                                    commentRequest.getClientRequestId());
+                                    commentRequest.getRequestId());
                             return ResponseEntity.ok(
                                     ApiResponse.success("请求已取消", cancelledResponse));
                         }
