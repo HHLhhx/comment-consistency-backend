@@ -13,7 +13,8 @@ import org.springframework.http.HttpStatus;
  * - 3xxx: 提示词服务相关错误<br>
  * - 4xxx: 缓存服务相关错误<br>
  * - 5xxx: 注释业务相关错误<br>
- * - 6xxx: 向量存储相关错误
+ * - 6xxx: 向量存储相关错误<br>
+ * - 7xxx: 认证授权相关错误<br>
  */
 @Getter
 public enum ErrorCode {
@@ -51,6 +52,8 @@ public enum ErrorCode {
     CACHE_READ_ERROR(4002, "缓存读取失败", HttpStatus.INTERNAL_SERVER_ERROR),
     CACHE_WRITE_ERROR(4003, "缓存写入失败", HttpStatus.INTERNAL_SERVER_ERROR),
     CACHE_CLEAR_ERROR(4004, "缓存清理失败", HttpStatus.INTERNAL_SERVER_ERROR),
+    REDIS_CONNECTION_ERROR(4005, "Redis连接失败", HttpStatus.SERVICE_UNAVAILABLE),
+    REDIS_OPERATION_ERROR(4006, "Redis操作异常", HttpStatus.INTERNAL_SERVER_ERROR),
 
     // ========== 注释业务错误 5xxx ==========
     COMMENT_SERVICE_ERROR(5001, "注释服务异常", HttpStatus.INTERNAL_SERVER_ERROR),

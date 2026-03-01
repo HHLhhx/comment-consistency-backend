@@ -156,7 +156,9 @@ public class CommentServiceImpl implements CommentService {
     }
 
     private String generateCommentCacheKey(CommentRequest request) {
-        return String.format("%s:%s:%s:%s:%s",
+        String username = CacheServiceImpl.getCurrentUsername();
+        return String.format("%s:%s:%s:%s:%s:%s",
+                username,
                 request.getOldMethod(),
                 request.getOldComment(),
                 request.getNewMethod(),

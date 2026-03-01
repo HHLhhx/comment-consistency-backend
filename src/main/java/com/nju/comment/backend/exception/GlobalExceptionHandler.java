@@ -4,6 +4,8 @@ import com.nju.comment.backend.dto.response.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.RedisConnectionFailureException;
+import org.springframework.data.redis.RedisSystemException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -159,6 +161,36 @@ public class GlobalExceptionHandler {
                     .body(ApiResponse.error("异步处理失败: " + cause.getMessage(),
                             ErrorCode.SYSTEM_ERROR.getCode()));
         }
+    }
+
+    /**
+     * 处理Redis连接异常
+     */
+    @ExceptionHandler(RedisConnectionFailureException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRedisConnectionException(
+            RedisConnectionFailureException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Redis连接失败: uri={}, error={}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ApiResponse.error("缓存服务暂时不可用", ErrorCode.REDIS_CONNECTION_ERROR.getCode()));
+    }
+
+    /**
+     * 处理Redis系统异常
+     */
+    @ExceptionHandler(RedisSystemException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRedisSystemException(
+            RedisSystemException ex,
+            HttpServletRequest request
+    ) {
+        log.error("Redis操作异常: uri={}, error={}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ApiResponse.error("缓存操作失败", ErrorCode.REDIS_OPERATION_ERROR.getCode()));
     }
 
     /**

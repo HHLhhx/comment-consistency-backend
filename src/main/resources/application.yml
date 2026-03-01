@@ -30,6 +30,18 @@ spring:
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 1
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+          max-wait: 3000ms
 
 # 监控配置
 management:
@@ -92,6 +104,9 @@ app:
     modelsList:
       max-size: 100
       ttl: 60
+    tokenBlacklist:
+      max-size: 1000
+      ttl: 604800
   jwt:
     header: Authorization
     secret: 0f9d11afdd49434e2ec86e16960df6a9d2733020884239a4bb5d002b0ae6303e

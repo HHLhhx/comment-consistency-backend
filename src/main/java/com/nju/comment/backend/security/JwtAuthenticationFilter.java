@@ -14,12 +14,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import jakarta.servlet.DispatcherType;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
@@ -28,14 +30,36 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
+    private static final String SECURITY_CONTEXT_ATTR = "JWT_SECURITY_CONTEXT";
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final ObjectMapper objectMapper;
     private final TokenBlacklistService tokenBlacklistService;
 
+    /**
+     * 不跳过异步派发请求，确保 CompletableFuture 异步完成时
+     * 能在 ASYNC dispatch 中恢复 SecurityContext
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
+        // 异步派发时，从 request attribute 恢复 SecurityContext
+        if (request.getDispatcherType() == DispatcherType.ASYNC) {
+            SecurityContext savedContext = (SecurityContext) request.getAttribute(SECURITY_CONTEXT_ATTR);
+            if (savedContext != null && savedContext.getAuthentication() != null) {
+                SecurityContextHolder.setContext(savedContext);
+            }
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -63,6 +87,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
+
+            // 将 SecurityContext 保存到 request attribute，供异步派发时恢复
+            request.setAttribute(SECURITY_CONTEXT_ATTR, SecurityContextHolder.getContext());
+
             filterChain.doFilter(request, response);
         } catch (ExpiredJwtException ex) {
             log.warn("JWT令牌已过期: uri={}", request.getRequestURI());
