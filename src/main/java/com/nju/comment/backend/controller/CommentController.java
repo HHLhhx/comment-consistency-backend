@@ -1,13 +1,17 @@
 package com.nju.comment.backend.controller;
 
 import com.nju.comment.backend.component.RequestCancelRegistry;
+import com.nju.comment.backend.context.UserApiContext;
 import com.nju.comment.backend.dto.request.CancelRequest;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.ApiResponse;
 import com.nju.comment.backend.dto.response.CommentResponse;
 import com.nju.comment.backend.exception.ErrorCode;
+import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CommentService;
 import com.nju.comment.backend.service.LLMService;
+import com.nju.comment.backend.service.impl.CacheServiceImpl;
+import com.nju.comment.backend.service.impl.UserApiKeyService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,7 @@ public class CommentController {
     private final CommentService commentService;
     private final LLMService llmService;
     private final RequestCancelRegistry requestCancelRegistry;
+    private final UserApiKeyService userApiKeyService;
 
     @Operation(summary = "生成注释", description = "为给定代码生成注释")
     @PostMapping("/generate")
@@ -96,11 +101,21 @@ public class CommentController {
     @Operation(summary = "获取可用模型列表", description = "获取当前支持的所有语言模型列表")
     @GetMapping("/models")
     public ResponseEntity<ApiResponse<List<String>>> getAvailableModels() {
-
         log.info("收到获取可用模型请求");
 
-        List<String> availableModels = llmService.getAvailableModels();
-        return ResponseEntity.ok(ApiResponse.success(availableModels));
+        // 获取当前用户的 API Key 并设入上下文
+        String username = CacheServiceImpl.getCurrentUsername();
+        String apiKey = userApiKeyService.getDecryptedApiKey(username);
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+        }
+        UserApiContext.setApiKey(apiKey);
+        try {
+            List<String> availableModels = llmService.getAvailableModels();
+            return ResponseEntity.ok(ApiResponse.success(availableModels));
+        } finally {
+            UserApiContext.clear();
+        }
     }
 }
 

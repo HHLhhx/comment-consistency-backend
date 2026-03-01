@@ -6,9 +6,11 @@ import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.CommentResponse;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
+import com.nju.comment.backend.context.UserApiContext;
 import com.nju.comment.backend.service.CacheService;
 import com.nju.comment.backend.service.CommentService;
 import com.nju.comment.backend.service.LLMService;
+import com.nju.comment.backend.service.impl.UserApiKeyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,6 +36,7 @@ public class CommentServiceImpl implements CommentService {
 
     private final LLMService llmService;
     private final CacheService cacheService;
+    private final UserApiKeyService userApiKeyService;
     private final RequestCancelRegistry requestCancelRegistry;
     private final ThreadPoolTaskExecutor llmTaskExecutor;
     private final ScheduledExecutorService llmTimeoutScheduler;
@@ -48,11 +51,17 @@ public class CommentServiceImpl implements CommentService {
 
         long timeoutMs = resolveTimeoutMs(request);
 
-        // 在请求线程中捕获用户名，避免异步线程池中 SecurityContext 不可用导致拿到 anonymous
+        // 在请求线程中捕获用户名和 API Key，避免异步线程池中 SecurityContext 不可用
         String currentUsername = CacheServiceImpl.getCurrentUsername();
+        String userApiKey = userApiKeyService.getDecryptedApiKey(currentUsername);
+        if (userApiKey == null || userApiKey.isBlank()) {
+            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+        }
 
         // 使用专用线程池执行，并将真正执行的 Future 注册到取消管理器，确保 cancel(true) 能中断线程
         CompletableFuture<CommentResponse> future = CompletableFuture.supplyAsync(() -> {
+            // 在异步线程中设置 API Key 上下文
+            UserApiContext.setApiKey(userApiKey);
             // 注册当前执行线程，使得cancel时能直接中断阻塞I/O（如LLM网络请求）
             requestCancelRegistry.registerThread(requestId, Thread.currentThread());
             Instant startTime = Instant.now();
@@ -125,6 +134,8 @@ public class CommentServiceImpl implements CommentService {
             } catch (Exception e) {
                 log.error("注释生成请求处理失败, requestId={}", requestId, e);
                 throw new ServiceException(ErrorCode.COMMENT_SERVICE_ERROR, e);
+            } finally {
+                UserApiContext.clear();
             }
         }, llmTaskExecutor);
 

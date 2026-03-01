@@ -1,45 +1,37 @@
 package com.nju.comment.backend.config;
 
+import lombok.Getter;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import com.nju.comment.backend.util.ApiKeyEncryptor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.http.HttpHeaders;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 @Configuration
 public class OllamaConfig {
 
+    @Getter
     @Value("${app.ai.ollama.chat.base-url:http://localhost:11434}")
     private String chatBaseUrl;
 
-    @Value("${app.ai.ollama.chat.api-key:}")
-    private String chatApiKey;
+    @Value("${app.security.api-key-encrypt-key}")
+    private String apiKeyEncryptKey;
 
-    @Bean("chatOllamaApi")
-    @Primary
-    public OllamaApi chatOllamaApi() {
-        RestClient.Builder restClientBuilder = RestClient.builder()
-                .baseUrl(chatBaseUrl);
-
-        if (StringUtils.hasText(chatApiKey)) {
-            restClientBuilder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + chatApiKey.trim());
-        }
-
-        return OllamaApi.builder()
-                .baseUrl(chatBaseUrl)
-                .restClientBuilder(restClientBuilder)
-                .build();
+    /**
+     * API Key 加解密器，供 UserApiKeyService 使用
+     */
+    @Bean
+    public ApiKeyEncryptor apiKeyEncryptor() {
+        return new ApiKeyEncryptor(apiKeyEncryptKey);
     }
-
 
     @Value("${app.ai.ollama.embedding.base-url:http://localhost:11434}")
     private String embeddingBaseUrl;
@@ -59,7 +51,7 @@ public class OllamaConfig {
     }
 
     @Bean
-    public EmbeddingModel embeddingModel(@Qualifier("embeddingOllamaApi") OllamaApi embeddingOllamaApi) {
+    public EmbeddingModel embeddingModel(OllamaApi embeddingOllamaApi) {
         return OllamaEmbeddingModel.builder()
                 .ollamaApi(embeddingOllamaApi)
                 .defaultOptions(

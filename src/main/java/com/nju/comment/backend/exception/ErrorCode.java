@@ -76,7 +76,8 @@ public enum ErrorCode {
     AUTH_NOT_LOGGED_IN(7005, "未登录，请先登录", HttpStatus.UNAUTHORIZED),
     AUTH_ACCESS_DENIED(7006, "权限不足，拒绝访问", HttpStatus.FORBIDDEN),
     AUTH_LOGOUT_SUCCESS(7007, "已成功登出", HttpStatus.OK),
-    AUTH_TOKEN_BLACKLISTED(7008, "令牌已失效，请重新登录", HttpStatus.UNAUTHORIZED);
+    AUTH_TOKEN_BLACKLISTED(7008, "令牌已失效，请重新登录", HttpStatus.UNAUTHORIZED),
+    AUTH_API_KEY_NOT_SET(7009, "未设置 API Key，请在用户设置中配置", HttpStatus.FORBIDDEN);
 
     private final int code;
     private final String message;

@@ -29,6 +29,12 @@ public class User {
     @Convert(converter = UserRoleConverter.class)
     private UserRole role = UserRole.USER;
 
+    /**
+     * 用户的 Ollama API Key（AES-GCM 加密存储）
+     */
+    @Column(length = 512)
+    private String ollamaApiKey;
+
     @CreatedDate
     @Column(nullable = false)
     private Date createdTime;

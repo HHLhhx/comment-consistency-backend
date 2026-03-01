@@ -91,7 +91,6 @@ app:
     ollama:
       chat:
         base-url: https://ollama.com
-        api-key: ${OLLAMA_API_KEY:}
       embedding:
         base-url: http://localhost:11434
         model: "qwen3-embedding:0.6b"
@@ -104,5 +103,8 @@ app:
       ttl: 60 # 1分钟
   jwt:
     header: Authorization
-    secret: 0f9d11afdd49434e2ec86e16960df6a9d2733020884239a4bb5d002b0ae6303e
+    secret: ${JWT_SECRET:}
     expiration: 604800000 # 7天
+  security:
+    # 用于 AES-GCM 加密存储用户 API Key 的 256 位密钥（64 个十六进制字符）
+    api-key-encrypt-key: ${API_KEY_ENCRYPT_KEY:}
