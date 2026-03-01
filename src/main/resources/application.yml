@@ -24,7 +24,6 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
   datasource:
     url: jdbc:mysql://localhost:3306/comment_consistency?useSSL=false&serverTimezone=UTC
     username: root
@@ -99,14 +98,10 @@ app:
         enable: false
   cache:
     comment:
-      max-size: 500
-      ttl: 3600
+      ttl: 3600 # 1小时
     modelsList:
       max-size: 100
-      ttl: 60
-    tokenBlacklist:
-      max-size: 1000
-      ttl: 604800
+      ttl: 60 # 1分钟
   jwt:
     header: Authorization
     secret: 0f9d11afdd49434e2ec86e16960df6a9d2733020884239a4bb5d002b0ae6303e

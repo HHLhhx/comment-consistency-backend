@@ -7,6 +7,7 @@ import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.model.User;
 import com.nju.comment.backend.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,6 +20,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+
 @Service
 @Slf4j
 public class UserService implements UserDetailsService {
@@ -27,13 +30,16 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       @Lazy AuthenticationManager authenticationManager, JwtService jwtService) {
+                       @Lazy AuthenticationManager authenticationManager, JwtService jwtService,
+                       TokenBlacklistService tokenBlacklistService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -66,6 +72,17 @@ public class UserService implements UserDetailsService {
             log.warn("登录失败: username={}, error={}", request.getUsername(), ex.getMessage());
             throw new ServiceException(ErrorCode.AUTH_LOGIN_FAILED, "登录失败: " + ex.getMessage());
         }
+    }
+
+    public AuthResponse logout(HttpServletRequest request) {
+        String authHeader = request.getHeader(jwtService.getHeader());
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            Date expiration = jwtService.extractExpiration(token);
+            tokenBlacklistService.blacklist(token, expiration);
+            log.info("用户登出成功: username={}", jwtService.extractUsername(token));
+        }
+        return new AuthResponse(null, "已成功登出");
     }
 
     @Override

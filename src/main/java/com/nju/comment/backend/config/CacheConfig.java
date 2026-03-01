@@ -13,21 +13,13 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
-import org.springframework.cache.support.CompositeCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
@@ -36,9 +28,7 @@ import java.util.concurrent.TimeUnit;
 @Data
 public class CacheConfig {
 
-    private CacheConfigItem comment;
     private CacheConfigItem modelsList;
-    private CacheConfigItem tokenBlacklist;
 
     /**
      * Redis序列化用的ObjectMapper
@@ -74,46 +64,6 @@ public class CacheConfig {
     }
 
     /**
-     * Redis缓存管理器 — 用于注释缓存（支持用户隔离）和令牌黑名单
-     */
-    @Bean("redisCacheManager")
-    @Primary
-    public CacheManager redisCacheManager(RedisConnectionFactory connectionFactory) {
-        GenericJackson2JsonRedisSerializer jsonSerializer =
-                new GenericJackson2JsonRedisSerializer(redisObjectMapper());
-
-        // 默认配置
-        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(jsonSerializer))
-                .disableCachingNullValues()
-                .entryTtl(Duration.ofMinutes(30));
-
-        // 各缓存分别配置
-        Map<String, RedisCacheConfiguration> cacheConfigMap = new HashMap<>();
-
-        // 注释缓存 — key 格式: commentCache::userId:cacheKey
-        if (comment != null) {
-            cacheConfigMap.put("commentCache", defaultConfig
-                    .entryTtl(Duration.ofSeconds(comment.getTtl()))
-                    .prefixCacheNameWith("cc:"));
-        }
-
-        // 令牌黑名单缓存
-        if (tokenBlacklist != null) {
-            cacheConfigMap.put("tokenBlacklist", defaultConfig
-                    .entryTtl(Duration.ofSeconds(tokenBlacklist.getTtl()))
-                    .prefixCacheNameWith("cc:"));
-        }
-
-        return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(defaultConfig)
-                .withInitialCacheConfigurations(cacheConfigMap)
-                .transactionAware()
-                .build();
-    }
-
-    /**
      * Caffeine本地缓存管理器 — 用于模型列表等无需用户隔离的高频读取场景
      */
     @Bean("caffeineCacheManager")
@@ -123,23 +73,12 @@ public class CacheConfig {
         if (modelsList != null) {
             Caffeine<Object, Object> modelsListCaffeine = Caffeine.newBuilder()
                     .maximumSize(modelsList.getMaxSize())
-                    .expireAfterWrite(modelsList.getTtl(), TimeUnit.SECONDS)
+                    .expireAfterAccess(modelsList.getTtl(), TimeUnit.SECONDS)
                     .recordStats();
             cacheManager.registerCustomCache("modelCache", modelsListCaffeine.build());
         }
 
         return cacheManager;
-    }
-
-    /**
-     * 组合缓存管理器 — 先查Redis，再查Caffeine
-     */
-    @Bean("compositeCacheManager")
-    public CacheManager compositeCacheManager(
-            CacheManager redisCacheManager, CacheManager caffeineCacheManager) {
-        CompositeCacheManager composite = new CompositeCacheManager(redisCacheManager, caffeineCacheManager);
-        composite.setFallbackToNoOpCache(false);
-        return composite;
     }
 
     @Data

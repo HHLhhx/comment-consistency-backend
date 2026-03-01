@@ -87,16 +87,4 @@ public enum ErrorCode {
         this.message = message;
         this.httpStatus = httpStatus;
     }
-
-    /**
-     * 根据错误码获取对应的枚举
-     */
-    public static ErrorCode fromCode(int code) {
-        for (ErrorCode errorCode : ErrorCode.values()) {
-            if (errorCode.getCode() == code) {
-                return errorCode;
-            }
-        }
-        return SYSTEM_ERROR;
-    }
 }

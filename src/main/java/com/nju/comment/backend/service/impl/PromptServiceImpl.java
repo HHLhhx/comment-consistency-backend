@@ -2,6 +2,7 @@ package com.nju.comment.backend.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nju.comment.backend.dto.request.CommentReqTag;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.exception.*;
 import com.nju.comment.backend.service.PromptService;
@@ -45,14 +46,14 @@ public class PromptServiceImpl implements PromptService {
 
         log.info("构建提示词开始");
 
-        if (request.isRag()) {
-            log.info("RAG启用，开始构建RAG示例");
-            buildRagExample(request);
-        }
-
         Map<String, Object> context = new HashMap<>();
-        if (request.getOldComment() != null && !request.getOldComment().isEmpty()) {
+        if (!CommentReqTag.GENERATE.equals(request.getTag())) {
             // 更新注释场景
+            if (CommentReqTag.UPDATE_WITH_RAG.equals(request.getTag())) {
+                log.info("RAG启用，开始构建RAG示例");
+                buildRagExample(request);
+            }
+
             context.put("old_method", request.getOldMethod());
             context.put("new_method", request.getNewMethod());
             context.put("old_comment", request.getOldComment());
