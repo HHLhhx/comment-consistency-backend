@@ -1,8 +1,6 @@
 # 应用服务器配置
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
 # Spring Boot 应用配置
 spring:
@@ -23,6 +21,15 @@ spring:
         auto-id: true
         embedding-field-name: "vector"
         content-field-name: "content"
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  datasource:
+    url: jdbc:mysql://localhost:3306/comment_consistency?useSSL=false&serverTimezone=UTC
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 # 监控配置
 management:
@@ -85,3 +92,7 @@ app:
     modelsList:
       max-size: 100
       ttl: 60
+  jwt:
+    header: Authorization
+    secret: 0f9d11afdd49434e2ec86e16960df6a9d2733020884239a4bb5d002b0ae6303e
+    expiration: 604800000 # 7天

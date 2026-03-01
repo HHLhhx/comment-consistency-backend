@@ -9,7 +9,6 @@ import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.service.CommentService;
 import com.nju.comment.backend.service.LLMService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,11 +23,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 @RestController
-@RequestMapping("/comments")
+@RequestMapping("/api/comments")
 @RequiredArgsConstructor
 @Slf4j
 @Validated
-@Tag(name = "注释生成", description = "智能注释生成api")
 public class CommentController {
 
     private final CommentService commentService;
