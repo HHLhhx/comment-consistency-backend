@@ -63,7 +63,17 @@ public enum ErrorCode {
     VECTOR_STORE_INIT_ERROR(6002, "向量数据库初始化失败", HttpStatus.INTERNAL_SERVER_ERROR),
     VECTOR_STORE_QUERY_ERROR(6003, "向量检索失败", HttpStatus.INTERNAL_SERVER_ERROR),
     VECTOR_STORE_CONNECTION_ERROR(6004, "向量数据库连接失败", HttpStatus.SERVICE_UNAVAILABLE),
-    VECTOR_STORE_INTERRUPTED(6005, "向量数据库操作被中断", HttpStatus.OK);
+    VECTOR_STORE_INTERRUPTED(6005, "向量数据库操作被中断", HttpStatus.OK),
+
+    // ========== 认证授权错误 7xxx ==========
+    AUTH_LOGIN_FAILED(7001, "用户名或密码错误", HttpStatus.UNAUTHORIZED),
+    AUTH_USERNAME_EXISTS(7002, "用户名已存在", HttpStatus.BAD_REQUEST),
+    AUTH_TOKEN_EXPIRED(7003, "登录已过期，请重新登录", HttpStatus.UNAUTHORIZED),
+    AUTH_TOKEN_INVALID(7004, "无效的认证令牌", HttpStatus.UNAUTHORIZED),
+    AUTH_NOT_LOGGED_IN(7005, "未登录，请先登录", HttpStatus.UNAUTHORIZED),
+    AUTH_ACCESS_DENIED(7006, "权限不足，拒绝访问", HttpStatus.FORBIDDEN),
+    AUTH_LOGOUT_SUCCESS(7007, "已成功登出", HttpStatus.OK),
+    AUTH_TOKEN_BLACKLISTED(7008, "令牌已失效，请重新登录", HttpStatus.UNAUTHORIZED);
 
     private final int code;
     private final String message;

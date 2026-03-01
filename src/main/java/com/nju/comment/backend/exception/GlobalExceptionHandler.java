@@ -6,6 +6,8 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -160,6 +162,29 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * 处理Spring Security认证异常
+     * 当AuthenticationException未在Service层被捕获时，由此兜底处理
+     */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAuthenticationException(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
+        String message;
+        if (ex instanceof BadCredentialsException) {
+            message = ErrorCode.AUTH_LOGIN_FAILED.getMessage();
+        } else {
+            message = "认证失败: " + ex.getMessage();
+        }
+
+        log.warn("认证异常: uri={}, error={}", request.getRequestURI(), ex.getMessage());
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(message, ErrorCode.AUTH_LOGIN_FAILED.getCode()));
+    }
+
+    /**
      * 处理其他未捕获异常
      */
     @ExceptionHandler(Exception.class)
@@ -182,7 +207,9 @@ public class GlobalExceptionHandler {
                 || errorCode == ErrorCode.LLM_INTERRUPTED
                 || errorCode == ErrorCode.COMMENT_REQUEST_CANCELLED
                 || errorCode == ErrorCode.RATE_LIMIT_EXCEEDED
-                || errorCode == ErrorCode.RESOURCE_NOT_FOUND;
+                || errorCode == ErrorCode.RESOURCE_NOT_FOUND
+                || errorCode == ErrorCode.AUTH_LOGIN_FAILED
+                || errorCode == ErrorCode.AUTH_USERNAME_EXISTS;
     }
 }
 

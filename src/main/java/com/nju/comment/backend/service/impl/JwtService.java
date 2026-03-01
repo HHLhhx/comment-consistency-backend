@@ -54,7 +54,10 @@ public class JwtService {
         return extractExpiration(token).before(new Date());
     }
 
-    private Date extractExpiration(String token) {
+    /**
+     * 提取令牌的过期时间
+     */
+    public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
 
