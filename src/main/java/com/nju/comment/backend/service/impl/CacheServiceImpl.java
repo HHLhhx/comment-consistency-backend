@@ -7,8 +7,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -72,18 +70,5 @@ public class CacheServiceImpl implements CacheService {
     public List<String> saveModelsList(String key, List<String> modelsList) {
         log.debug("缓存模型列表, key={}", key);
         return modelsList;
-    }
-
-    // ==================== 工具方法 ====================
-
-    /**
-     * 获取当前登录用户名，用于构建用户隔离的缓存key
-     */
-    public static String getCurrentUsername() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-            return auth.getName();
-        }
-        return "anonymous";
     }
 }

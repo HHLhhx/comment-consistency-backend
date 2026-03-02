@@ -14,5 +14,5 @@ public interface LLMService {
     /**
      * 获取可用模型列表
      */
-    List<String> getAvailableModels();
+    List<String> getAvailableModels(String username);
 }

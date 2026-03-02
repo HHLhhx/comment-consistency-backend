@@ -44,9 +44,6 @@ public class CacheConfig {
         return om;
     }
 
-    /**
-     * RedisTemplate — 供 TokenBlacklistService 等需要直接操作 Redis 的场景使用
-     */
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();

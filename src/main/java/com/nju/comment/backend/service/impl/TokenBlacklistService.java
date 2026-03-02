@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
  * JWT令牌黑名单服务
  * <p>
  * 基于 Redis 管理已登出的 JWT 令牌，利用 Redis 的 TTL 自动过期机制清理数据。
- * 支持多实例部署时的黑名单共享。
  */
 @Service
 @Slf4j

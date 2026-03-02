@@ -2,6 +2,7 @@ package com.nju.comment.backend.config;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -81,7 +82,7 @@ public class AsyncConfig implements AsyncConfigurer {
     @Slf4j
     static class CustomAsyncExceptionHandler implements AsyncUncaughtExceptionHandler {
         @Override
-        public void handleUncaughtException(Throwable ex, Method method, Object... params) {
+        public void handleUncaughtException(@NonNull Throwable ex, Method method, Object @NonNull ... params) {
             log.error("异步方法执行异常: 方法={}, 参数={}", method.getName(), params, ex);
         }
     }

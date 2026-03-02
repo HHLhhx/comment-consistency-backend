@@ -1,6 +1,7 @@
 package com.nju.comment.backend.service.impl;
 
 import com.nju.comment.backend.component.OllamaModelFactory;
+import com.nju.comment.backend.context.UserApiContext;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.LLMException;
@@ -21,7 +22,7 @@ import java.util.List;
 public class LLMServiceImpl implements LLMService {
 
     private final OllamaModelFactory ollamaModelFactory;
-
+    private final UserApiKeyService userApiKeyService;
     private final PromptService promptService;
 
     @Override
@@ -111,7 +112,18 @@ public class LLMServiceImpl implements LLMService {
     }
 
     @Override
-    public List<String> getAvailableModels() {
-        return ollamaModelFactory.getAvailableChatModels();
+    public List<String> getAvailableModels(String username) {
+        // 获取当前用户的 API Key 并设入上下文
+        String apiKey = userApiKeyService.getDecryptedApiKey(username);
+        if (apiKey == null || apiKey.isBlank()) {
+            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+        }
+        UserApiContext.setApiKey(apiKey);
+
+        try {
+            return ollamaModelFactory.getAvailableChatModels();
+        } finally {
+            UserApiContext.clear();
+        }
     }
 }

@@ -46,7 +46,7 @@ public class OllamaModelFactory {
     /** 缓存 key = apiKeyHash:modelName → ChatClient */
     private final Map<String, ChatClient> clientCache = new ConcurrentHashMap<>();
 
-    /** 缓存 apiKeyHash → OllamaApi，避免为同一 Key 重复构建 */
+    /** 缓存 apiKeyHash → OllamaApi */
     private final Map<String, OllamaApi> apiCache = new ConcurrentHashMap<>();
 
     /**
@@ -86,26 +86,29 @@ public class OllamaModelFactory {
         }
 
         try {
+            // 先尝试从缓存获取模型列表，避免频繁调用 Ollama API
             List<String> models = cacheService.getModelsList("MODELS_LIST");
             if (models != null && !models.isEmpty()) {
                 log.info("从缓存获取到 {} 个可用模型", models.size());
                 return models;
             }
 
+            // 计算 API Key 的短哈希，作为缓存 key 和日志标识
             String keyHash = shortHash(apiKey);
             OllamaApi ollamaApi = getOrCreateOllamaApi(apiKey, keyHash);
 
+            // 调用 Ollama API 获取模型列表
             OllamaApi.ListModelResponse listModelResponse = ollamaApi.listModels();
             if (listModelResponse.models() == null || listModelResponse.models().isEmpty()) {
                 log.warn("未获取到任何可用模型");
                 return Collections.emptyList();
             }
 
+            // 提取模型名称列表，并缓存结果
             log.info("获取到 {} 个可用模型", listModelResponse.models().size());
             List<String> modelsList = listModelResponse.models().stream()
                     .map(OllamaApi.Model::name)
                     .toList();
-
             cacheService.saveModelsList("MODELS_LIST", modelsList);
             return modelsList;
         } catch (ServiceException e) {

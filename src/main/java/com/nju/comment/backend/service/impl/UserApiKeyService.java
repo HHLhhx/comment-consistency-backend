@@ -63,6 +63,18 @@ public class UserApiKeyService {
         log.info("用户 {} 的 API Key 已删除", username);
     }
 
+    /**
+     * 对 API Key 做脱敏处理，只显示前4位和后4位
+     *
+     * @param apiKey 明文 API Key
+     */
+    public String maskApiKey(String apiKey) {
+        if (apiKey == null || apiKey.length() <= 8) {
+            return "****";
+        }
+        return apiKey.substring(0, 4) + "****" + apiKey.substring(apiKey.length() - 4);
+    }
+
     private User findUser(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ServiceException(ErrorCode.RESOURCE_NOT_FOUND,
