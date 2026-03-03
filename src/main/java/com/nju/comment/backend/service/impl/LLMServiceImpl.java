@@ -33,83 +33,74 @@ public class LLMServiceImpl implements LLMService {
         }
 
         long startTime = System.currentTimeMillis();
+        String requestId = request.getRequestId();
 
-        ChatClient client = ollamaModelFactory.getChatModelClient(request.getModelName());
         try {
-            // 检查线程中断状态
+            // 调用前检查中断状态
             if (Thread.currentThread().isInterrupted()) {
-                log.info("LLM调用前检测到线程中断，requestId={}", request.getRequestId());
                 throw new InterruptedException("线程已被中断");
             }
 
-            log.info("调用LLM生成注释");
+            ChatClient client = ollamaModelFactory.getChatModelClient(request.getModelName());
+            String systemPrompt = promptService.getSystemPrompt(request);
+            String userPrompt = promptService.buildUserPrompt(request);
 
-            try {
-                String systemPrompt = promptService.getSystemPrompt(request);
-                String userPrompt = promptService.buildUserPrompt(request);
+            log.info("调用LLM生成注释，requestId={}", requestId);
 
-                // 执行LLM调用，期间可被线程中断
-                String result = client.prompt()
-                        .system(systemPrompt)
-                        .user(userPrompt)
-                        .call()
-                        .content();
+            // 执行LLM调用，期间可被线程中断
+            String result = client.prompt()
+                    .system(systemPrompt)
+                    .user(userPrompt)
+                    .call()
+                    .content();
 
-                // 再次检查中断状态
-                if (Thread.currentThread().isInterrupted()) {
-                    log.info("LLM调用后检测到线程中断，requestId={}", request.getRequestId());
-                    throw new InterruptedException("线程已被中断");
-                }
-
-                long duration = System.currentTimeMillis() - startTime;
-                log.debug("LLM生成注释完成，耗时：{}ms，requestId：{}，内容：\n{}",
-                        duration, request.getRequestId(), result);
-                return result;
-            } catch (ResourceAccessException e) {
-                // Spring AI 包装异常：ResourceAccessException -> IOException -> InterruptedException
-                if (isInterrupted(e)) {
-                    long duration = System.currentTimeMillis() - startTime;
-                    log.info("LLM生成注释在执行中被中断，耗时：{}ms，requestId：{}",
-                            duration, request.getRequestId());
-                    Thread.currentThread().interrupt();
-                    throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", request.getRequestId());
-                }
-                log.error("LLM网络请求失败，requestId：{}", request.getRequestId(), e);
-                throw new LLMException(ErrorCode.LLM_CONNECTION_ERROR, "LLM连接失败", e);
-            } catch (NonTransientAiException e) {
-                // Spring AI 返回的不可重试异常，根据 HTTP 状态码区分具体原因
-                long duration = System.currentTimeMillis() - startTime;
-                String msg = e.getMessage() != null ? e.getMessage() : "";
-                if (msg.contains("401")) {
-                    log.warn("API Key 无效，耗时：{}ms，requestId：{}", duration, request.getRequestId());
-                    throw new LLMException(ErrorCode.LLM_API_KEY_INVALID,
-                            "API Key 无效，请检查后重新配置", request.getRequestId());
-                } else if (msg.contains("404")) {
-                    log.warn("指定的LLM模型不存在，耗时：{}ms，requestId：{}", duration, request.getRequestId());
-                    throw new LLMException(ErrorCode.LLM_MODEL_NOT_FOUND,
-                            "指定的模型不存在: " + request.getModelName(), request.getRequestId());
-                } else {
-                    log.error("LLM服务请求被拒绝，耗时：{}ms，requestId：{}", duration, request.getRequestId(), e);
-                    throw new LLMException(ErrorCode.LLM_SERVICE_ERROR, "LLM服务请求失败: " + msg, e);
-                }
-            } catch (InterruptedException e) {
-                // 线程在LLM调用期间被直接中断（在调用前）
-                long duration = System.currentTimeMillis() - startTime;
-                log.info("线程在LLM调用期间被直接中断，耗时：{}ms，requestId：{}",
-                        duration, request.getRequestId());
-                Thread.currentThread().interrupt();
-                throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", request.getRequestId());
+            // 调用后再次检查中断状态
+            if (Thread.currentThread().isInterrupted()) {
+                throw new InterruptedException("线程已被中断");
             }
-        } catch (ServiceException e) {
-            throw e;
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.debug("LLM生成注释完成，耗时：{}ms，requestId：{}，内容：\n{}", duration, requestId, result);
+            return result;
+
+        } catch (ResourceAccessException e) {
+            // Spring AI 包装异常：ResourceAccessException -> IOException -> InterruptedException
+            if (isInterrupted(e)) {
+                log.info("LLM生成注释在执行中被中断，耗时：{}ms，requestId：{}",
+                        elapsed(startTime), requestId);
+                Thread.currentThread().interrupt();
+                throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", requestId);
+            }
+            log.error("LLM网络请求失败，requestId：{}", requestId, e);
+            throw new LLMException(ErrorCode.LLM_CONNECTION_ERROR, "LLM连接失败", e);
+
+        } catch (NonTransientAiException e) {
+            // Spring AI 不可重试异常，根据 HTTP 状态码区分具体原因
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("401")) {
+                log.warn("API Key 无效，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
+                throw new LLMException(ErrorCode.LLM_API_KEY_INVALID,
+                        "API Key 无效，请检查后重新配置", requestId);
+            }
+            if (msg.contains("404")) {
+                log.warn("指定的LLM模型不存在，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
+                throw new LLMException(ErrorCode.LLM_MODEL_NOT_FOUND,
+                        "指定的模型不存在: " + request.getModelName(), requestId);
+            }
+            log.error("LLM服务请求被拒绝，耗时：{}ms，requestId：{}", elapsed(startTime), requestId, e);
+            throw new LLMException(ErrorCode.LLM_SERVICE_ERROR, "LLM服务请求失败: " + msg, e);
+
         } catch (InterruptedException e) {
-            long duration = System.currentTimeMillis() - startTime;
-            log.info("LLM生成注释被中断，耗时：{}ms，requestId：{}", duration, request.getRequestId());
+            log.info("LLM生成注释被中断，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
             Thread.currentThread().interrupt();
-            throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", request.getRequestId());
+            throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", requestId);
+
+        } catch (ServiceException e) {
+            // PromptService 等内部组件抛出的业务异常，直接透传
+            throw e;
+
         } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            log.error("LLM生成注释失败，耗时：{}ms，requestId：{}", duration, request.getRequestId(), e);
+            log.error("LLM生成注释失败，耗时：{}ms，requestId：{}", elapsed(startTime), requestId, e);
             throw new LLMException(ErrorCode.LLM_SERVICE_ERROR, "LLM服务异常", e);
         }
     }
@@ -126,6 +117,10 @@ public class LLMServiceImpl implements LLMService {
             current = current.getCause();
         }
         return false;
+    }
+
+    private long elapsed(long startTime) {
+        return System.currentTimeMillis() - startTime;
     }
 
     @Override
