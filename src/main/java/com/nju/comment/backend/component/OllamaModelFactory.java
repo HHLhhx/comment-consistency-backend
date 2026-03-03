@@ -56,7 +56,7 @@ public class OllamaModelFactory {
         // 从 UserApiContext 获取 API Key，并进行基本校验
         String apiKey = UserApiContext.getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
-            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+            throw new ServiceException(ErrorCode.LLM_API_KEY_NOT_SET);
         }
 
         // 计算 API Key 的短哈希，作为缓存 key 和日志标识
@@ -82,7 +82,7 @@ public class OllamaModelFactory {
         // 从 UserApiContext 获取 API Key，并进行基本校验
         String apiKey = UserApiContext.getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
-            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+            throw new ServiceException(ErrorCode.LLM_API_KEY_NOT_SET);
         }
 
         try {

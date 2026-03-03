@@ -6,6 +6,7 @@ import com.nju.comment.backend.dto.request.CommentReqTag;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.dto.response.CommentResponse;
 import com.nju.comment.backend.exception.ErrorCode;
+import com.nju.comment.backend.exception.LLMException;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.context.UserApiContext;
 import com.nju.comment.backend.service.CacheService;
@@ -27,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
@@ -54,7 +54,7 @@ public class CommentServiceImpl implements CommentService {
         // 在请求线程中捕获用户名和 API Key，避免异步线程池中 SecurityContext 不可用
         String userApiKey = userApiKeyService.getDecryptedApiKey(username);
         if (userApiKey == null || userApiKey.isBlank()) {
-            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+            throw new ServiceException(ErrorCode.LLM_API_KEY_NOT_SET);
         }
 
         // 使用专用线程池执行，并将真正执行的 Future 注册到取消管理器，确保 cancel(true) 能中断线程
@@ -131,8 +131,11 @@ public class CommentServiceImpl implements CommentService {
 
                 log.info("注释生成请求处理完成, requestId={}, 耗时={}ms", requestId, response.getProcessingTimeMs());
                 return response;
+            } catch (ServiceException e) {
+                log.warn("注释生成请求处理失败, requestId={}", requestId);
+                throw e;
             } catch (Exception e) {
-                log.error("注释生成请求处理失败, requestId={}", requestId, e);
+                log.error("注释生成请求处理失败, requestId={}", requestId);
                 throw new ServiceException(ErrorCode.COMMENT_SERVICE_ERROR, e);
             } finally {
                 // 清理上下文和线程注册，避免内存泄漏
@@ -147,7 +150,7 @@ public class CommentServiceImpl implements CommentService {
             }
             log.warn("注释生成请求超时，requestId={}，timeoutMs={}", requestId, timeoutMs);
             requestCancelRegistry.timeout(requestId);
-            future.completeExceptionally(new TimeoutException("LLM调用超时"));
+            future.completeExceptionally(new LLMException(ErrorCode.LLM_TIMEOUT));
         }, timeoutMs, TimeUnit.MILLISECONDS);
 
         // 无论正常完成还是异常完成，都取消超时任务，避免不必要的调度执行

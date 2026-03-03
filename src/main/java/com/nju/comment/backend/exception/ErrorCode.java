@@ -40,6 +40,9 @@ public enum ErrorCode {
     LLM_MODEL_FETCH_ERROR(2006, "获取LLM模型列表失败", HttpStatus.INTERNAL_SERVER_ERROR),
     LLM_MODEL_NOT_FOUND(2007, "指定的LLM模型不存在", HttpStatus.BAD_REQUEST),
     LLM_CONNECTION_ERROR(2008, "LLM连接失败", HttpStatus.SERVICE_UNAVAILABLE),
+    LLM_API_KEY_NOT_SET(2009, "未设置 API Key，请在用户设置中配置", HttpStatus.FORBIDDEN),
+    LLM_API_KEY_INVALID(2010, "API Key 无效，请检查后重新配置", HttpStatus.UNAUTHORIZED),
+
 
     // ========== 提示词服务错误 3xxx ==========
     PROMPT_SERVICE_ERROR(3001, "提示词服务异常", HttpStatus.INTERNAL_SERVER_ERROR),
@@ -76,8 +79,7 @@ public enum ErrorCode {
     AUTH_NOT_LOGGED_IN(7005, "未登录，请先登录", HttpStatus.UNAUTHORIZED),
     AUTH_ACCESS_DENIED(7006, "权限不足，拒绝访问", HttpStatus.FORBIDDEN),
     AUTH_LOGOUT_SUCCESS(7007, "已成功登出", HttpStatus.OK),
-    AUTH_TOKEN_BLACKLISTED(7008, "令牌已失效，请重新登录", HttpStatus.UNAUTHORIZED),
-    AUTH_API_KEY_NOT_SET(7009, "未设置 API Key，请在用户设置中配置", HttpStatus.FORBIDDEN);
+    AUTH_TOKEN_BLACKLISTED(7008, "令牌已失效，请重新登录", HttpStatus.UNAUTHORIZED);
 
     private final int code;
     private final String message;

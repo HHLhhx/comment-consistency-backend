@@ -11,6 +11,7 @@ import com.nju.comment.backend.service.PromptService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.retry.NonTransientAiException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -75,6 +76,22 @@ public class LLMServiceImpl implements LLMService {
                 }
                 log.error("LLM网络请求失败，requestId：{}", request.getRequestId(), e);
                 throw new LLMException(ErrorCode.LLM_CONNECTION_ERROR, "LLM连接失败", e);
+            } catch (NonTransientAiException e) {
+                // Spring AI 返回的不可重试异常，根据 HTTP 状态码区分具体原因
+                long duration = System.currentTimeMillis() - startTime;
+                String msg = e.getMessage() != null ? e.getMessage() : "";
+                if (msg.contains("401")) {
+                    log.warn("API Key 无效，耗时：{}ms，requestId：{}", duration, request.getRequestId());
+                    throw new LLMException(ErrorCode.LLM_API_KEY_INVALID,
+                            "API Key 无效，请检查后重新配置", request.getRequestId());
+                } else if (msg.contains("404")) {
+                    log.warn("指定的LLM模型不存在，耗时：{}ms，requestId：{}", duration, request.getRequestId());
+                    throw new LLMException(ErrorCode.LLM_MODEL_NOT_FOUND,
+                            "指定的模型不存在: " + request.getModelName(), request.getRequestId());
+                } else {
+                    log.error("LLM服务请求被拒绝，耗时：{}ms，requestId：{}", duration, request.getRequestId(), e);
+                    throw new LLMException(ErrorCode.LLM_SERVICE_ERROR, "LLM服务请求失败: " + msg, e);
+                }
             } catch (InterruptedException e) {
                 // 线程在LLM调用期间被直接中断（在调用前）
                 long duration = System.currentTimeMillis() - startTime;
@@ -116,12 +133,20 @@ public class LLMServiceImpl implements LLMService {
         // 获取当前用户的 API Key 并设入上下文
         String apiKey = userApiKeyService.getDecryptedApiKey(username);
         if (apiKey == null || apiKey.isBlank()) {
-            throw new ServiceException(ErrorCode.AUTH_API_KEY_NOT_SET);
+            throw new ServiceException(ErrorCode.LLM_API_KEY_NOT_SET);
         }
         UserApiContext.setApiKey(apiKey);
 
         try {
             return ollamaModelFactory.getAvailableChatModels();
+        } catch (NonTransientAiException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "";
+            if (msg.contains("401")) {
+                log.warn("获取模型列表失败：API Key 无效，username：{}", username);
+                throw new ServiceException(ErrorCode.LLM_API_KEY_INVALID);
+            }
+            log.error("获取模型列表失败，username：{}", username, e);
+            throw new ServiceException(ErrorCode.LLM_SERVICE_ERROR, "获取模型列表失败: " + msg);
         } finally {
             UserApiContext.clear();
         }

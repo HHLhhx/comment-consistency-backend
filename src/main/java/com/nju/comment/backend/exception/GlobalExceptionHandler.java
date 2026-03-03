@@ -171,7 +171,7 @@ public class GlobalExceptionHandler {
             RedisConnectionFailureException ex,
             HttpServletRequest request
     ) {
-        log.error("Redis连接失败: uri={}, error={}", request.getRequestURI(), ex.getMessage());
+        log.error("Redis连接失败: uri={}, error={}", request.getRequestURI(), ex.getMessage(), ex);
 
         return ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
@@ -186,7 +186,7 @@ public class GlobalExceptionHandler {
             RedisSystemException ex,
             HttpServletRequest request
     ) {
-        log.error("Redis操作异常: uri={}, error={}", request.getRequestURI(), ex.getMessage());
+        log.error("Redis操作异常: uri={}, error={}", request.getRequestURI(), ex.getMessage(), ex);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -241,7 +241,9 @@ public class GlobalExceptionHandler {
                 || errorCode == ErrorCode.RATE_LIMIT_EXCEEDED
                 || errorCode == ErrorCode.RESOURCE_NOT_FOUND
                 || errorCode == ErrorCode.AUTH_LOGIN_FAILED
-                || errorCode == ErrorCode.AUTH_USERNAME_EXISTS;
+                || errorCode == ErrorCode.AUTH_USERNAME_EXISTS
+                || errorCode == ErrorCode.LLM_API_KEY_INVALID
+                || errorCode == ErrorCode.LLM_API_KEY_NOT_SET;
     }
 }
 
