@@ -1,14 +1,11 @@
 package com.nju.comment.backend.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nju.comment.backend.security.JwtAccessDeniedHandler;
 import com.nju.comment.backend.security.JwtAuthenticationEntryPoint;
 import com.nju.comment.backend.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -85,12 +82,5 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
-
-    @Bean
-    public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
-        ObjectMapper objectMapper = builder.build();
-        objectMapper.registerModule(new JavaTimeModule());
-        return objectMapper;
     }
 }
