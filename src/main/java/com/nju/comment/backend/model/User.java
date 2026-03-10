@@ -35,6 +35,10 @@ public class User {
     @Column(length = 512)
     private String ollamaApiKey;
 
+    @NotBlank
+    @Column(unique = true, nullable = false, length = 11)
+    private String phone;
+
     @CreatedDate
     @Column(nullable = false)
     private Date createdTime;

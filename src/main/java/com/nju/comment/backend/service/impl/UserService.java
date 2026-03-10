@@ -47,9 +47,14 @@ public class UserService implements UserDetailsService {
             throw new ServiceException(ErrorCode.AUTH_USERNAME_EXISTS,
                     "用户名 '" + request.getUsername() + "' 已被注册");
         }
+        if (userRepository.findByPhone(request.getPhone()).isPresent()) {
+            throw new ServiceException(ErrorCode.AUTH_PHONE_EXISTS,
+                    "手机号 '" + request.getPhone() + "' 已被注册");
+        }
         User user = new User();
         user.setUsername(request.getUsername());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhone(request.getPhone());
         userRepository.save(user);
 
         String token = jwtService.generateToken(user.getUsername());

@@ -242,6 +242,7 @@ public class GlobalExceptionHandler {
                 || errorCode == ErrorCode.RESOURCE_NOT_FOUND
                 || errorCode == ErrorCode.AUTH_LOGIN_FAILED
                 || errorCode == ErrorCode.AUTH_USERNAME_EXISTS
+                || errorCode == ErrorCode.AUTH_PHONE_EXISTS
                 || errorCode == ErrorCode.LLM_API_KEY_INVALID
                 || errorCode == ErrorCode.LLM_API_KEY_NOT_SET;
     }
