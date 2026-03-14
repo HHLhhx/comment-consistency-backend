@@ -38,13 +38,11 @@ public class UserSettingsController {
     @GetMapping("/api-key")
     public ResponseEntity<ApiResponse<String>> checkApiKey(@AuthenticationPrincipal UserDetails userDetails) {
         boolean hasKey = userApiKeyService.hasApiKey(userDetails.getUsername());
-        String maskedKey = null;
+        String apiKey = null;
         if (hasKey) {
-            String decrypted = userApiKeyService.getDecryptedApiKey(userDetails.getUsername());
-            maskedKey = userApiKeyService.maskApiKey(decrypted);
+            apiKey = userApiKeyService.getDecryptedApiKey(userDetails.getUsername());
         }
-        log.info("maskedKey={}", maskedKey);
-        return ResponseEntity.ok(ApiResponse.success(maskedKey));
+        return ResponseEntity.ok(ApiResponse.success(apiKey));
     }
 
     @DeleteMapping("/api-key")

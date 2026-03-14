@@ -23,16 +23,22 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class CommentServiceImpl implements CommentService {
+
+    private static final Pattern CODE_FENCE_PATTERN = Pattern.compile("(?s)```(?:\\w+)?\\s*(.*?)\\s*```");
 
     private final LLMService llmService;
     private final CacheService cacheService;
@@ -167,8 +173,76 @@ public class CommentServiceImpl implements CommentService {
     }
 
     private String postProcessComment(String generatedComment) {
-        //TODO
-        return generatedComment;
+        String normalized = generatedComment == null ? "" : generatedComment.replace("\r\n", "\n").trim();
+        if (normalized.isEmpty()) {
+            return "/**\n * TODO\n */";
+        }
+
+        // LLM 常会把答案包在 markdown 代码块中，先提取真实内容。
+        Matcher fenceMatcher = CODE_FENCE_PATTERN.matcher(normalized);
+        if (fenceMatcher.find()) {
+            normalized = fenceMatcher.group(1).trim();
+        }
+
+        String extracted = extractCommentBodyFromBlock(normalized);
+        if (extracted == null) {
+            extracted = normalized;
+        }
+        return toJavadocBlock(extracted);
+    }
+
+    private String extractCommentBodyFromBlock(String text) {
+        int javadocStart = text.indexOf("/**");
+        if (javadocStart >= 0) {
+            int end = text.indexOf("*/", javadocStart + 3);
+            if (end > javadocStart) {
+                return text.substring(javadocStart + 3, end);
+            }
+        }
+
+        int blockStart = text.indexOf("/*");
+        if (blockStart >= 0) {
+            int end = text.indexOf("*/", blockStart + 2);
+            if (end > blockStart) {
+                return text.substring(blockStart + 2, end);
+            }
+        }
+
+        return null;
+    }
+
+    private String toJavadocBlock(String rawBody) {
+        String[] lines = rawBody.replace("\r\n", "\n").split("\\n", -1);
+        List<String> cleanedLines = new ArrayList<>(lines.length);
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.startsWith("*")) {
+                trimmed = trimmed.substring(1).trim();
+            }
+            cleanedLines.add(trimmed);
+        }
+
+        while (!cleanedLines.isEmpty() && cleanedLines.get(0).isEmpty()) {
+            cleanedLines.remove(0);
+        }
+        while (!cleanedLines.isEmpty() && cleanedLines.get(cleanedLines.size() - 1).isEmpty()) {
+            cleanedLines.remove(cleanedLines.size() - 1);
+        }
+        if (cleanedLines.isEmpty()) {
+            cleanedLines.add("TODO");
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("/**\n");
+        for (String line : cleanedLines) {
+            if (line.isEmpty()) {
+                sb.append(" *\n");
+            } else {
+                sb.append(" * ").append(line).append("\n");
+            }
+        }
+        sb.append(" */");
+        return sb.toString();
     }
 
     private boolean isStopped(String requestId) {
