@@ -105,17 +105,18 @@ public class PromptServiceImpl implements PromptService {
 
         long startTime = System.currentTimeMillis();
         try {
+            int k = request.getRagExampleNum();
             String query = buildQueryForRAG(request);
-            List<Document> top3 = vectorStore.similaritySearch(
+            List<Document> topK = vectorStore.similaritySearch(
                     SearchRequest.builder()
                             .query(query)
-                            .topK(3)
+                            .topK(k)
                             .build()
             );
             long endTime = System.currentTimeMillis();
             log.info("RAG检索完成，耗时：{}ms", endTime - startTime);
 
-            String ragExamples = buildRagExamples(top3);
+            String ragExamples = buildRagExamples(topK);
             request.setRagExample(ragExamples);
         } catch (ResourceAccessException e) {
             if (isInterrupted(e)) {

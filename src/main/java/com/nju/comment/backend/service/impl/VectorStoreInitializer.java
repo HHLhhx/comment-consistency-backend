@@ -29,10 +29,10 @@ public class VectorStoreInitializer {
 
     private final ObjectMapper objectMapper;
 
-    @Value("classpath:/docs/test.jsonl")
+    @Value("classpath:/docs/data_test_clean_serialized.jsonl")
     private Resource[] resources;
 
-    @Value("${app.ai.ollama.embedding.enable:false}")
+    @Value("${app.vectorstore.init:false}")
     private boolean enable;
 
     @PostConstruct

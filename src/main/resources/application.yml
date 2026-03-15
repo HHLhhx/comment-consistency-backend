@@ -94,7 +94,8 @@ app:
       embedding:
         base-url: http://localhost:11434
         model: "qwen3-embedding:0.6b"
-        enable: false
+  vectorstore:
+    init: false
   cache:
     comment:
       ttl: 3600 # 1小时

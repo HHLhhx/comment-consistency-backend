@@ -32,5 +32,8 @@ public class CommentRequest {
     @NotNull(message = "tag 不能为空")
     private CommentReqTag tag;
 
+    @Min(value = 0, message = "ragExampleNum 必须大于或等于 0")
+    private int ragExampleNum;
+
     private String ragExample;
 }
