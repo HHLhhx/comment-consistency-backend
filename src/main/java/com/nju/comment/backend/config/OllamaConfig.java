@@ -59,7 +59,7 @@ public class OllamaConfig {
                 )
                 .modelManagementOptions(
                         ModelManagementOptions.builder()
-                                .pullModelStrategy(PullModelStrategy.ALWAYS)
+                                .pullModelStrategy(PullModelStrategy.WHEN_MISSING)
                                 .build()
                 )
                 .build();

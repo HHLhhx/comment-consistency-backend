@@ -24,8 +24,8 @@ services:
     depends_on:
       - mysql
       - redis
-      - standalone
       - ollama
+      - standalone
 
   ollama:
     container_name: ccb-ollama
