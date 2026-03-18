@@ -12,28 +12,28 @@ spring:
         client:
           host: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST:www.hhlhhx.top}
           port: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT:19530}
-        databaseName: ${SPRING_AI_VECTORSTORE_MILVUS_DATABASE_NAME:test}
-        collectionName: ${SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME:vector_store_test}
+        databaseName: ${SPRING_AI_VECTORSTORE_MILVUS_DATABASE_NAME:comment_consistency}
+        collectionName: ${SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME:comment_vector_store}
         initialize-schema: ${SPRING_AI_VECTORSTORE_MILVUS_INITIALIZE_SCHEMA:true}
         embeddingDimension: ${SPRING_AI_VECTORSTORE_MILVUS_EMBEDDING_DIMENSION:1024}
         indexType: IVF_FLAT
         metricType: COSINE
-        auto-id: true
+        auto-id: false
         embedding-field-name: "vector"
         content-field-name: "content"
   jpa:
     hibernate:
       ddl-auto: update
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://www.hhlhhx.top/comment_consistency?useSSL=false&serverTimezone=UTC}
-    username: ${SPRING_DATASOURCE_USERNAME:comment_user}
-    password: ${SPRING_DATASOURCE_PASSWORD:}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/comment_consistency?useSSL=false&serverTimezone=UTC}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:www.hhlhhx.top}
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6379}
-      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      password: ${SPRING_DATA_REDIS_PASSWORD:123456}
       database: ${SPRING_DATA_REDIS_DATABASE:1}
       timeout: ${SPRING_DATA_REDIS_TIMEOUT:5000ms}
       lettuce:
@@ -73,10 +73,10 @@ app:
       chat:
         base-url: ${APP_AI_OLLAMA_CHAT_BASE_URL:https://ollama.com}
       embedding:
-        base-url: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:www.hhlhhx.top:11434}
+        base-url: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:http://localhost:11434}
         model: ${APP_AI_OLLAMA_EMBEDDING_MODEL:qwen3-embedding:0.6b}
   vectorstore:
-    init: false
+    init: true
   cache:
     comment:
       ttl: 3600 # 1小时
