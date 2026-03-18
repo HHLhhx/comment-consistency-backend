@@ -170,11 +170,15 @@ public class PromptServiceImpl implements PromptService {
             }
             try {
                 Map<String, Object> exampleContext = new HashMap<>();
-                JsonNode node = objectMapper.readTree(document.getText());
-                exampleContext.put("old_method", "\t" + node.path("src_method").asText(""));
-                exampleContext.put("new_method", "\t" + node.path("dst_method").asText(""));
-                exampleContext.put("old_comment", node.path("src_javadoc").asText(""));
-                exampleContext.put("new_comment", node.path("dst_javadoc").asText(""));
+                String srcMethod = readDocumentField(document, "src_method");
+                String dstMethod = readDocumentField(document, "dst_method");
+                String srcJavadoc = readDocumentField(document, "src_javadoc");
+                String dstJavadoc = readDocumentField(document, "dst_javadoc");
+
+                exampleContext.put("old_method", "\t" + srcMethod);
+                exampleContext.put("new_method", "\t" + dstMethod);
+                exampleContext.put("old_comment", srcJavadoc);
+                exampleContext.put("new_comment", dstJavadoc);
 
                 Prompt prompt = exampleTemplate.create(exampleContext);
                 examples.add(prompt.getContents());
@@ -185,6 +189,22 @@ public class PromptServiceImpl implements PromptService {
 
         String delimiter = "\n----------------------------\n";
         return delimiter + String.join(delimiter, examples) + delimiter;
+    }
+
+    private String readDocumentField(Document document, String fieldName) {
+        if (document.getMetadata() != null) {
+            Object metadataValue = document.getMetadata().get(fieldName);
+            if (metadataValue != null) {
+                return metadataValue.toString();
+            }
+        }
+
+        try {
+            JsonNode node = objectMapper.readTree(document.getText());
+            return node.path(fieldName).asText("");
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
 

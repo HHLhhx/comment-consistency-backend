@@ -10,7 +10,7 @@ spring:
     vectorstore:
       milvus:
         client:
-          host: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST:www.hhlhhx.top}
+          host: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST:127.0.0.1}
           port: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT:19530}
         databaseName: ${SPRING_AI_VECTORSTORE_MILVUS_DATABASE_NAME:comment_consistency}
         collectionName: ${SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME:comment_vector_store}
@@ -76,7 +76,7 @@ app:
         base-url: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:http://localhost:11434}
         model: ${APP_AI_OLLAMA_EMBEDDING_MODEL:qwen3-embedding:0.6b}
   vectorstore:
-    init: true
+    init: ${APP_VECTORSTORE_INIT:false}
   cache:
     comment:
       ttl: 3600 # 1小时

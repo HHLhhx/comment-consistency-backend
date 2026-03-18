@@ -18,10 +18,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -36,7 +40,7 @@ public class VectorStoreInitializer {
 
     private final ObjectMapper objectMapper;
 
-    @Value("classpath:/docs/**")
+    @Value("classpath:/docs/data_test_clean_serialized.jsonl")
     private Resource[] resources;
 
     @Value("${app.vectorstore.init:false}")
@@ -58,6 +62,8 @@ public class VectorStoreInitializer {
         }
 
         int globalProcessed = 0;
+        int globalSkipped = 0;
+        Set<String> seenDocIds = new HashSet<>(Math.max(total, 1024));
         for (int i = 0; i < resources.length; i++) {
             Resource resource = resources[i];
             int fileTotal = fileTotals[i];
@@ -85,16 +91,25 @@ public class VectorStoreInitializer {
                     keyJson.put("dst_method", dstMethod);
                     keyJson.put("src_javadoc", srcJavadoc);
 
-                    ObjectNode contentJson = objectMapper.createObjectNode();
-                    contentJson.put("src_method", srcMethod);
-                    contentJson.put("dst_method", dstMethod);
-                    contentJson.put("src_javadoc", srcJavadoc);
-                    contentJson.put("dst_javadoc", dstJavadoc);
+                    ObjectNode vectorTextJson = objectMapper.createObjectNode();
+                    vectorTextJson.put("src_method", srcMethod);
+                    vectorTextJson.put("dst_method", dstMethod);
+                    vectorTextJson.put("src_javadoc", srcJavadoc);
+
+                    String docId = sha256Hex(objectMapper.writeValueAsString(keyJson)).substring(0, 32);
+                    if (!seenDocIds.add(docId)) {
+                        globalSkipped++;
+                        continue;
+                    }
 
                     Document doc = new Document(
-                            objectMapper.writeValueAsString(keyJson),
-                            objectMapper.writeValueAsString(contentJson),
-                            Map.of());
+                            docId,
+                            objectMapper.writeValueAsString(vectorTextJson),
+                            Map.of(
+                                "src_method", srcMethod,
+                                "dst_method", dstMethod,
+                                "src_javadoc", srcJavadoc,
+                                "dst_javadoc", dstJavadoc));
                     docs.add(doc);
 
                     fileProcessed++;
@@ -107,26 +122,55 @@ public class VectorStoreInitializer {
                                 fileProcessed,
                                 fileTotal,
                                 globalProcessed,
-                                total));
+                                total) + "\r");
                         nextProgressMark = fileProcessed + PROGRESS_STEP;
                     }
 
                     if (docs.size() >= BATCH_SIZE) {
-                        vectorStore.add(docs);
+                        try {
+                            vectorStore.add(docs);
+                        } catch (Exception e) {
+                            log.error("Batch insert failed at file={}, fileProcessed={}, globalProcessed={}, batchSize={}",
+                                    resolveResourceName(resource), fileProcessed, globalProcessed, docs.size(), e);
+                            throw e;
+                        }
                         docs.clear();
                     }
                 }
 
                 if (!docs.isEmpty()) {
-                    vectorStore.add(docs);
+                    try {
+                        vectorStore.add(docs);
+                    } catch (Exception e) {
+                        log.error("Final batch insert failed at file={}, fileProcessed={}, globalProcessed={}, batchSize={}",
+                                resolveResourceName(resource), fileProcessed, globalProcessed, docs.size(), e);
+                        throw e;
+                    }
                 }
                 System.out.println();
             } catch (IOException e) {
                 log.error("向量数据库初始化失败", e);
                 throw new VectorStoreException(ErrorCode.VECTOR_STORE_INIT_ERROR, "向量数据库初始化失败", e);
+            } catch (Exception e) {
+                log.error("向量数据库初始化失败", e);
+                throw new VectorStoreException(ErrorCode.VECTOR_STORE_INIT_ERROR, "向量数据库初始化失败", e);
             }
         }
-        log.info("VectorStore init complete. {} documents processed.", globalProcessed);
+        log.info("VectorStore init complete. {} documents processed, {} duplicates skipped.", globalProcessed, globalSkipped);
+    }
+
+    private String sha256Hex(String raw) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(raw.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(digest.length * 2);
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 algorithm is unavailable", e);
+        }
     }
 
     private int[] countLinesPerResource(Resource[] resourceList) {
