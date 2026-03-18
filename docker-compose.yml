@@ -36,6 +36,15 @@ services:
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/ollama:/root/.ollama
 
+  attu:
+    container_name: ccb-attu
+    image: zilliz/attu:latest
+    restart: unless-stopped
+    ports:
+      - "${ATTU_BIND_IP:-127.0.0.1}:${ATTU_PORT:-8000}:3000"
+    depends_on:
+      - standalone
+
   mysql:
     container_name: ccb-mysql
     image: mysql:8.0
