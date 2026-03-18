@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/comment-consistency-backend
   DEPLOY_PATH: /opt/comment-consistency-backend
 
 jobs:
@@ -18,6 +17,7 @@ jobs:
       packages: write
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
+      image_name: ${{ steps.meta.outputs.image_name }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
@@ -25,6 +25,8 @@ jobs:
       - name: Set image metadata
         id: meta
         run: |
+          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "image_name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
           echo "image_tag=${IMAGE_NAME}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Login to GHCR
@@ -42,7 +44,7 @@ jobs:
           push: true
           tags: |
             ${{ steps.meta.outputs.image_tag }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ steps.meta.outputs.image_name }}:latest
 
   deploy:
     needs: build-and-push
