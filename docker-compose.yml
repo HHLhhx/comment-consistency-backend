@@ -16,6 +16,8 @@ services:
       SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
       SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST: standalone
       SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT: 19530
+      SPRING_AI_VECTORSTORE_MILVUS_DATABASE_NAME: ${SPRING_AI_VECTORSTORE_MILVUS_DATABASE_NAME:-comment_consistency}
+      SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME: ${SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME:-vector_store_test}
       APP_JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       APP_SECURITY_API_KEY_ENCRYPT_KEY: ${API_KEY_ENCRYPT_KEY:?API_KEY_ENCRYPT_KEY is required}
       APP_AI_OLLAMA_CHAT_BASE_URL: ${APP_AI_OLLAMA_CHAT_BASE_URL:-https://ollama.com}
@@ -35,15 +37,6 @@ services:
       - "11434:11434"
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/ollama:/root/.ollama
-
-  attu:
-    container_name: ccb-attu
-    image: zilliz/attu:latest
-    restart: unless-stopped
-    ports:
-      - "${ATTU_BIND_IP:-127.0.0.1}:${ATTU_PORT:-8000}:3000"
-    depends_on:
-      - standalone
 
   mysql:
     container_name: ccb-mysql

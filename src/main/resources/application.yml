@@ -10,7 +10,7 @@ spring:
     vectorstore:
       milvus:
         client:
-          host: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST:localhost}
+          host: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_HOST:www.hhlhhx.top}
           port: ${SPRING_AI_VECTORSTORE_MILVUS_CLIENT_PORT:19530}
         databaseName: ${SPRING_AI_VECTORSTORE_MILVUS_DATABASE_NAME:test}
         collectionName: ${SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME:vector_store_test}
@@ -25,13 +25,13 @@ spring:
     hibernate:
       ddl-auto: update
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/comment_consistency?useSSL=false&serverTimezone=UTC}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://www.hhlhhx.top/comment_consistency?useSSL=false&serverTimezone=UTC}
     username: ${SPRING_DATASOURCE_USERNAME:comment_user}
     password: ${SPRING_DATASOURCE_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      host: ${SPRING_DATA_REDIS_HOST:www.hhlhhx.top}
       port: ${SPRING_DATA_REDIS_PORT:6379}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
       database: ${SPRING_DATA_REDIS_DATABASE:1}
@@ -73,7 +73,7 @@ app:
       chat:
         base-url: ${APP_AI_OLLAMA_CHAT_BASE_URL:https://ollama.com}
       embedding:
-        base-url: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:http://localhost:11434}
+        base-url: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:www.hhlhhx.top:11434}
         model: ${APP_AI_OLLAMA_EMBEDDING_MODEL:qwen3-embedding:0.6b}
   vectorstore:
     init: false
