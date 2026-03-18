@@ -162,7 +162,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.nju.comment.backend.CommentConsistencyBackendApplication</mainClass>
-                    <skip>true</skip>
+                    <skip>false</skip>
                 </configuration>
                 <executions>
                     <execution>
