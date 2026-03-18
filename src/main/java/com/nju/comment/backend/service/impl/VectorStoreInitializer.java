@@ -29,7 +29,7 @@ public class VectorStoreInitializer {
 
     private final ObjectMapper objectMapper;
 
-    @Value("classpath:/docs/data_test_clean_serialized.jsonl")
+    @Value("classpath:/docs/**")
     private Resource[] resources;
 
     @Value("${app.vectorstore.init:false}")

@@ -5,8 +5,8 @@ target/
 !**/src/test/**/target/
 logs/
 docs/
-note.md
 bin
+.env
 
 ### STS ###
 .apt_generated
