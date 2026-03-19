@@ -12,6 +12,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
@@ -32,6 +33,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class VectorStoreInitializer {
 
+    private static final String DOCS_RESOURCE_PATTERN = "classpath*:/docs/**/*.jsonl";
     private static final int BATCH_SIZE = 256;
     private static final int PROGRESS_BAR_WIDTH = 40;
     private static final int PROGRESS_STEP = 50;
@@ -40,8 +42,7 @@ public class VectorStoreInitializer {
 
     private final ObjectMapper objectMapper;
 
-    @Value("classpath:/docs/**")
-    private Resource[] resources;
+    private final ResourcePatternResolver resourcePatternResolver;
 
     @Value("${app.vectorstore.init:false}")
     private boolean enable;
@@ -53,11 +54,17 @@ public class VectorStoreInitializer {
             return;
         }
 
+        Resource[] resources = loadResources();
+        if (resources.length == 0) {
+            log.warn("No documents found in {}, skip initialization.", DOCS_RESOURCE_PATTERN);
+            return;
+        }
+
         log.info("Initializing VectorStore...");
         int[] fileTotals = countLinesPerResource(resources);
         int total = Arrays.stream(fileTotals).sum();
-        if (total == 0) {
-            log.warn("No documents found in classpath:/docs/**, skip initialization.");
+        if (total <= 0) {
+            log.warn("No valid lines found in {}, skip initialization.", DOCS_RESOURCE_PATTERN);
             return;
         }
 
@@ -106,10 +113,10 @@ public class VectorStoreInitializer {
                             docId,
                             objectMapper.writeValueAsString(vectorTextJson),
                             Map.of(
-                                "src_method", srcMethod,
-                                "dst_method", dstMethod,
-                                "src_javadoc", srcJavadoc,
-                                "dst_javadoc", dstJavadoc));
+                                    "src_method", srcMethod,
+                                    "dst_method", dstMethod,
+                                    "src_javadoc", srcJavadoc,
+                                    "dst_javadoc", dstJavadoc));
                     docs.add(doc);
 
                     fileProcessed++;
@@ -154,6 +161,15 @@ public class VectorStoreInitializer {
             }
         }
         log.info("VectorStore init complete. {} documents processed, {} duplicates skipped.", globalProcessed, globalSkipped);
+    }
+
+    private Resource[] loadResources() {
+        try {
+            return resourcePatternResolver.getResources(DOCS_RESOURCE_PATTERN);
+        } catch (IOException e) {
+            log.warn("Failed to resolve documents with pattern {}, skip initialization.", DOCS_RESOURCE_PATTERN, e);
+            return new Resource[0];
+        }
     }
 
     private String sha256Hex(String raw) {
