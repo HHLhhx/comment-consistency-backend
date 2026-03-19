@@ -40,7 +40,7 @@ public class VectorStoreInitializer {
 
     private final ObjectMapper objectMapper;
 
-    @Value("classpath:/docs/data_test_clean_serialized.jsonl")
+    @Value("classpath:/docs/**")
     private Resource[] resources;
 
     @Value("${app.vectorstore.init:false}")
@@ -148,9 +148,6 @@ public class VectorStoreInitializer {
                     }
                 }
                 System.out.println();
-            } catch (IOException e) {
-                log.error("向量数据库初始化失败", e);
-                throw new VectorStoreException(ErrorCode.VECTOR_STORE_INIT_ERROR, "向量数据库初始化失败", e);
             } catch (Exception e) {
                 log.error("向量数据库初始化失败", e);
                 throw new VectorStoreException(ErrorCode.VECTOR_STORE_INIT_ERROR, "向量数据库初始化失败", e);
@@ -193,7 +190,7 @@ public class VectorStoreInitializer {
     private String buildProgressBar(int current, int total, int width) {
         int safeTotal = Math.max(total, 1);
         int percent = (int) ((current * 100L) / safeTotal);
-        int filled = (int) ((current * 1L * width) / safeTotal);
+        int filled = (int) (((long) current * width) / safeTotal);
 
         StringBuilder sb = new StringBuilder(width + 32);
         sb.append('[');

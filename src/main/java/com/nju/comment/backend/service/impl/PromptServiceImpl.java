@@ -2,6 +2,7 @@ package com.nju.comment.backend.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.nju.comment.backend.dto.request.CommentReqTag;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.exception.*;
@@ -144,16 +145,25 @@ public class PromptServiceImpl implements PromptService {
     }
 
     private String buildQueryForRAG(CommentRequest request) {
-        if (request == null) return null;
+        if (request == null) {
+            throw new ServiceException(ErrorCode.PARAMETER_ERROR, "请求参数不能为空");
+        }
 
         String oldMethod = request.getOldMethod();
         String newMethod = request.getNewMethod();
         String oldComment = request.getOldComment();
 
-        return "what is the dst_javadoc for the following method change:\n" +
-                "src_method: " + oldMethod + "\n" +
-                "dst_method: " + newMethod + "\n" +
-                "src_javadoc: " + oldComment + "\n";
+        ObjectNode jsonNodes = objectMapper.createObjectNode();
+        jsonNodes.put("src_method", oldMethod);
+        jsonNodes.put("dst_method", newMethod);
+        jsonNodes.put("src_javadoc", oldComment);
+
+        try {
+            return objectMapper.writeValueAsString(jsonNodes);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.error("构建RAG查询字符串失败", e);
+            throw new PromptException(ErrorCode.PROMPT_BUILD_ERROR, "构建RAG查询字符串失败", e);
+        }
     }
 
     private String buildRagExamples(List<Document> documents) {
@@ -192,11 +202,9 @@ public class PromptServiceImpl implements PromptService {
     }
 
     private String readDocumentField(Document document, String fieldName) {
-        if (document.getMetadata() != null) {
-            Object metadataValue = document.getMetadata().get(fieldName);
-            if (metadataValue != null) {
-                return metadataValue.toString();
-            }
+        Object metadataValue = document.getMetadata().get(fieldName);
+        if (metadataValue != null) {
+            return metadataValue.toString();
         }
 
         try {
