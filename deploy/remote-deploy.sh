@@ -26,6 +26,32 @@ APP_AI_OLLAMA_EMBEDDING_MODEL="${APP_AI_OLLAMA_EMBEDDING_MODEL:-qwen3-embedding:
 ATTU_BIND_IP="${ATTU_BIND_IP:-127.0.0.1}"
 ATTU_PORT="${ATTU_PORT:-8000}"
 
+resolve_volume_root() {
+  if [ -n "${DOCKER_VOLUME_DIRECTORY:-}" ]; then
+    echo "${DOCKER_VOLUME_DIRECTORY}"
+  else
+    # Keep consistent with docker-compose fallback ${DOCKER_VOLUME_DIRECTORY:-.}
+    echo "$DEPLOY_PATH"
+  fi
+}
+
+resolve_spring_user_ids() {
+  # Resolve runtime uid/gid from image so host permissions match container user.
+  SPRING_UID="$(docker run --rm --entrypoint sh "$IMAGE_TAG" -c 'id -u spring 2>/dev/null || id -u')"
+  SPRING_GID="$(docker run --rm --entrypoint sh "$IMAGE_TAG" -c 'id -g spring 2>/dev/null || id -g')"
+}
+
+prepare_backend_logs_dir() {
+  VOLUME_ROOT="$(resolve_volume_root)"
+  LOG_DIR="${VOLUME_ROOT}/volumes/backend/logs"
+
+  mkdir -p "$LOG_DIR"
+
+  resolve_spring_user_ids
+  chown -R "${SPRING_UID}:${SPRING_GID}" "$LOG_DIR"
+  chmod -R ug+rwX "$LOG_DIR"
+}
+
 require_env() {
   var_name="$1"
   eval "var_value=\${$var_name:-}"
@@ -87,6 +113,8 @@ SPRING_AI_VECTORSTORE_MILVUS_COLLECTION_NAME=${SPRING_AI_VECTORSTORE_MILVUS_COLL
 EOF
 
 chmod 600 .env.production
+
+prepare_backend_logs_dir
 
 docker compose --env-file .env.production -f docker-compose.yml pull
 docker compose --env-file .env.production -f docker-compose.yml up -d --remove-orphans
