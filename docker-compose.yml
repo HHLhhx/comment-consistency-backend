@@ -19,7 +19,8 @@ services:
     volumes:
       - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/backend/logs:/app/logs
     environment:
-      LOGGING_FILE_PATH: /app/logs
+      JAVA_TOOL_OPTIONS: >
+        -Dlogging.file.name=/app/logs/comment.log
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-comment_consistency}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-comment_user}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:?MYSQL_PASSWORD is required}
