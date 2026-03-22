@@ -48,8 +48,10 @@ prepare_backend_logs_dir() {
   mkdir -p "$LOG_DIR"
 
   resolve_spring_user_ids
-  chown -R "${SPRING_UID}:${SPRING_GID}" "$LOG_DIR"
-  chmod -R ug+rwX "$LOG_DIR"
+
+  # Run permission fix through Docker daemon to avoid requiring root shell user.
+  docker run --rm -v "$LOG_DIR":/target alpine:3.20 sh -c \
+    "chown -R ${SPRING_UID}:${SPRING_GID} /target && chmod -R ug+rwX /target"
 }
 
 require_env() {
