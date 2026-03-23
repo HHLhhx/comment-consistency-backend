@@ -1,7 +1,7 @@
 package com.nju.comment.backend.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,20 +11,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class RegisterRequest {
-    @NotBlank
-    private String username;
+public class SendEmailCodeRequest {
 
     @Email(message = "邮箱格式不正确")
     @NotBlank
     private String email;
-
-    @NotBlank
-    private String password;
-
-    @NotBlank
-    private String confirmPassword;
-
-    @NotBlank
-    private String emailCode;
 }

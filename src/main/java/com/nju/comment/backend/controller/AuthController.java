@@ -2,8 +2,10 @@ package com.nju.comment.backend.controller;
 
 import com.nju.comment.backend.dto.request.LoginRequest;
 import com.nju.comment.backend.dto.request.RegisterRequest;
+import com.nju.comment.backend.dto.request.SendEmailCodeRequest;
 import com.nju.comment.backend.dto.response.ApiResponse;
 import com.nju.comment.backend.dto.response.AuthResponse;
+import com.nju.comment.backend.service.impl.EmailVerificationService;
 import com.nju.comment.backend.service.impl.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -24,6 +26,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final UserService userService;
+    private final EmailVerificationService emailVerificationService;
+
+    @PostMapping("/send-email-code")
+    public ResponseEntity<ApiResponse<Object>> sendEmailCode(@Valid @RequestBody SendEmailCodeRequest request) {
+        emailVerificationService.sendRegisterCode(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success("验证码已发送", null));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {

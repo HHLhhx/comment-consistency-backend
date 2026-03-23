@@ -6,8 +6,11 @@ import com.nju.comment.backend.dto.response.AuthResponse;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.model.User;
+import com.nju.comment.backend.model.UserCredential;
+import com.nju.comment.backend.repository.UserCredentialRepository;
 import com.nju.comment.backend.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,60 +24,82 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
+    private final UserCredentialRepository userCredentialRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final EmailVerificationService emailVerificationService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+    public UserService(UserRepository userRepository,
+                       UserCredentialRepository userCredentialRepository,
+                       PasswordEncoder passwordEncoder,
                        @Lazy AuthenticationManager authenticationManager, JwtService jwtService,
-                       TokenBlacklistService tokenBlacklistService) {
+                       TokenBlacklistService tokenBlacklistService,
+                       EmailVerificationService emailVerificationService) {
         this.userRepository = userRepository;
+        this.userCredentialRepository = userCredentialRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.tokenBlacklistService = tokenBlacklistService;
+        this.emailVerificationService = emailVerificationService;
     }
 
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new ServiceException(ErrorCode.AUTH_USERNAME_EXISTS,
                     "用户名 '" + request.getUsername() + "' 已被注册");
         }
-        if (userRepository.findByPhone(request.getPhone()).isPresent()) {
-            throw new ServiceException(ErrorCode.AUTH_PHONE_EXISTS,
-                    "手机号 '" + request.getPhone() + "' 已被注册");
+        if (userCredentialRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new ServiceException(ErrorCode.AUTH_EMAIL_EXISTS,
+                    "邮箱 '" + request.getEmail() + "' 已被注册");
         }
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new ServiceException(ErrorCode.AUTH_PASSWORD_CONFIRM_MISMATCH, "两次输入密码不一致");
+        }
+
+        emailVerificationService.verifyRegisterCode(request.getEmail(), request.getEmailCode());
+
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setPhone(request.getPhone());
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        String token = jwtService.generateToken(user.getUsername());
+        UserCredential credential = new UserCredential();
+        credential.setUser(savedUser);
+        credential.setEmail(request.getEmail());
+        credential.setPassword(passwordEncoder.encode(request.getPassword()));
+        userCredentialRepository.save(credential);
+
+        String token = jwtService.generateToken(savedUser.getUsername());
         log.info("用户注册成功: username={}", request.getUsername());
         return new AuthResponse(token, "注册成功");
     }
 
     public AuthResponse login(LoginRequest request) {
+        String account = request.getAccount();
         try {
+            String username = resolveLoginUsername(account);
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                    new UsernamePasswordAuthenticationToken(username, request.getPassword())
             );
-            String token = jwtService.generateToken(request.getUsername());
-            log.info("用户登录成功: username={}", request.getUsername());
+
+            String token = jwtService.generateToken(username);
+            log.info("用户登录成功: account={}, username={}", account, username);
             return new AuthResponse(token, "登录成功");
         } catch (BadCredentialsException ex) {
-            log.warn("登录失败，密码错误: username={}", request.getUsername());
-            throw new ServiceException(ErrorCode.AUTH_LOGIN_FAILED, "用户名或密码错误");
+            log.warn("登录失败，密码错误: account={}", account);
+            throw new ServiceException(ErrorCode.AUTH_LOGIN_FAILED, "用户名/邮箱或密码错误");
         } catch (AuthenticationException ex) {
-            log.warn("登录失败: username={}, error={}", request.getUsername(), ex.getMessage());
+            log.warn("登录失败: account={}, error={}", account, ex.getMessage());
             throw new ServiceException(ErrorCode.AUTH_LOGIN_FAILED, "登录失败: " + ex.getMessage());
         }
     }
@@ -92,12 +117,33 @@ public class UserService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
+        UserCredential credential = userCredentialRepository.findWithUserByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        User user = credential.getUser();
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
-                .password(user.getPassword())
+                .password(credential.getPassword())
                 .roles(user.getRole().getName())
                 .build();
+    }
+
+    private String resolveLoginUsername(String account) {
+        UserCredential credential = findCredentialByAccount(account)
+                .orElseThrow(() -> new ServiceException(ErrorCode.AUTH_LOGIN_FAILED, "用户名/邮箱或密码错误"));
+        return credential.getUser().getUsername();
+    }
+
+
+    private Optional<UserCredential> findCredentialByAccount(String account) {
+        if (looksLikeEmail(account)) {
+            return userCredentialRepository.findWithUserByEmail(account)
+                .or(() -> userCredentialRepository.findWithUserByUsername(account));
+        }
+        return userCredentialRepository.findWithUserByUsername(account)
+            .or(() -> userCredentialRepository.findWithUserByEmail(account));
+    }
+
+    private boolean looksLikeEmail(String account) {
+        return account != null && account.contains("@");
     }
 }

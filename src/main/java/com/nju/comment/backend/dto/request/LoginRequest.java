@@ -1,5 +1,6 @@
 package com.nju.comment.backend.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -12,7 +13,9 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LoginRequest {
     @NotBlank
-    private String username;
+    @JsonAlias({"username", "email"})
+    private String account;
+
     @NotBlank
     private String password;
 }

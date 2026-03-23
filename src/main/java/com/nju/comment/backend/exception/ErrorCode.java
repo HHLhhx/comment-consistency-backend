@@ -80,7 +80,11 @@ public enum ErrorCode {
     AUTH_ACCESS_DENIED(7006, "权限不足，拒绝访问", HttpStatus.FORBIDDEN),
     AUTH_LOGOUT_SUCCESS(7007, "已成功登出", HttpStatus.OK),
     AUTH_TOKEN_BLACKLISTED(7008, "令牌已失效，请重新登录", HttpStatus.UNAUTHORIZED),
-    AUTH_PHONE_EXISTS(7009, "手机号已被注册", HttpStatus.BAD_REQUEST);
+    AUTH_PHONE_EXISTS(7009, "手机号已被注册", HttpStatus.BAD_REQUEST),
+    AUTH_EMAIL_EXISTS(7010, "邮箱已被注册", HttpStatus.BAD_REQUEST),
+    AUTH_EMAIL_CODE_INVALID(7011, "邮箱验证码错误或已过期", HttpStatus.BAD_REQUEST),
+    AUTH_PASSWORD_CONFIRM_MISMATCH(7012, "两次输入密码不一致", HttpStatus.BAD_REQUEST),
+    AUTH_EMAIL_SEND_FAILED(7013, "邮箱验证码发送失败", HttpStatus.INTERNAL_SERVER_ERROR);
 
     private final int code;
     private final String message;
