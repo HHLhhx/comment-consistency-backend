@@ -5,7 +5,9 @@ import com.nju.comment.backend.dto.request.RegisterRequest;
 import com.nju.comment.backend.dto.request.SendEmailCodeRequest;
 import com.nju.comment.backend.dto.response.ApiResponse;
 import com.nju.comment.backend.dto.response.AuthResponse;
+import com.nju.comment.backend.dto.response.EncryptionKeyResponse;
 import com.nju.comment.backend.service.impl.EmailVerificationService;
+import com.nju.comment.backend.service.impl.RequestCryptoService;
 import com.nju.comment.backend.service.impl.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +30,16 @@ public class AuthController {
 
     private final UserService userService;
     private final EmailVerificationService emailVerificationService;
+    private final RequestCryptoService requestCryptoService;
+
+    @GetMapping("/encryption-key")
+    public ResponseEntity<ApiResponse<EncryptionKeyResponse>> getEncryptionKey() {
+        EncryptionKeyResponse data = new EncryptionKeyResponse(
+                "RSA/ECB/OAEPWithSHA-256AndMGF1Padding",
+                requestCryptoService.getPublicKeyBase64()
+        );
+        return ResponseEntity.ok(ApiResponse.success(data));
+    }
 
     @PostMapping("/send-email-code")
     public ResponseEntity<ApiResponse<Object>> sendEmailCode(@Valid @RequestBody SendEmailCodeRequest request) {

@@ -2,6 +2,7 @@ package com.nju.comment.backend.controller;
 
 import com.nju.comment.backend.dto.request.ApiKeyRequest;
 import com.nju.comment.backend.dto.response.ApiResponse;
+import com.nju.comment.backend.service.impl.RequestCryptoService;
 import com.nju.comment.backend.service.impl.UserApiKeyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,24 +26,27 @@ import org.springframework.web.bind.annotation.*;
 public class UserSettingsController {
 
     private final UserApiKeyService userApiKeyService;
+    private final RequestCryptoService requestCryptoService;
 
     @PutMapping("/api-key")
     public ResponseEntity<ApiResponse<Void>> saveApiKey(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody ApiKeyRequest request
     ) {
-        userApiKeyService.saveApiKey(userDetails.getUsername(), request.getApiKey());
+        String plainApiKey = requestCryptoService.decryptIfNeeded(request.getApiKey());
+        userApiKeyService.saveApiKey(userDetails.getUsername(), plainApiKey);
         return ResponseEntity.ok(ApiResponse.success("API Key 已保存", null));
     }
 
     @GetMapping("/api-key")
     public ResponseEntity<ApiResponse<String>> checkApiKey(@AuthenticationPrincipal UserDetails userDetails) {
         boolean hasKey = userApiKeyService.hasApiKey(userDetails.getUsername());
-        String apiKey = null;
+        String maskKey = null;
         if (hasKey) {
-            apiKey = userApiKeyService.getDecryptedApiKey(userDetails.getUsername());
+            String apiKey = userApiKeyService.getDecryptedApiKey(userDetails.getUsername());
+            maskKey = userApiKeyService.maskApiKey(apiKey);
         }
-        return ResponseEntity.ok(ApiResponse.success(apiKey));
+        return ResponseEntity.ok(ApiResponse.success(maskKey));
     }
 
     @DeleteMapping("/api-key")

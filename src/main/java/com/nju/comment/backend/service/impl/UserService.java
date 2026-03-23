@@ -37,13 +37,15 @@ public class UserService implements UserDetailsService {
     private final JwtService jwtService;
     private final TokenBlacklistService tokenBlacklistService;
     private final EmailVerificationService emailVerificationService;
+    private final RequestCryptoService requestCryptoService;
 
     public UserService(UserRepository userRepository,
                        UserCredentialRepository userCredentialRepository,
                        PasswordEncoder passwordEncoder,
                        @Lazy AuthenticationManager authenticationManager, JwtService jwtService,
                        TokenBlacklistService tokenBlacklistService,
-                       EmailVerificationService emailVerificationService) {
+                       EmailVerificationService emailVerificationService,
+                       RequestCryptoService requestCryptoService) {
         this.userRepository = userRepository;
         this.userCredentialRepository = userCredentialRepository;
         this.passwordEncoder = passwordEncoder;
@@ -51,6 +53,7 @@ public class UserService implements UserDetailsService {
         this.jwtService = jwtService;
         this.tokenBlacklistService = tokenBlacklistService;
         this.emailVerificationService = emailVerificationService;
+        this.requestCryptoService = requestCryptoService;
     }
 
     @Transactional
@@ -63,7 +66,10 @@ public class UserService implements UserDetailsService {
             throw new ServiceException(ErrorCode.AUTH_EMAIL_EXISTS,
                     "邮箱 '" + request.getEmail() + "' 已被注册");
         }
-        if (!request.getPassword().equals(request.getConfirmPassword())) {
+        String plainPassword = requestCryptoService.decryptIfNeeded(request.getPassword());
+        String plainConfirmPassword = requestCryptoService.decryptIfNeeded(request.getConfirmPassword());
+
+        if (!plainPassword.equals(plainConfirmPassword)) {
             throw new ServiceException(ErrorCode.AUTH_PASSWORD_CONFIRM_MISMATCH, "两次输入密码不一致");
         }
 
@@ -76,25 +82,26 @@ public class UserService implements UserDetailsService {
         UserCredential credential = new UserCredential();
         credential.setUser(savedUser);
         credential.setEmail(request.getEmail());
-        credential.setPassword(passwordEncoder.encode(request.getPassword()));
+        credential.setPassword(passwordEncoder.encode(plainPassword));
         userCredentialRepository.save(credential);
 
         String token = jwtService.generateToken(savedUser.getUsername());
         log.info("用户注册成功: username={}", request.getUsername());
-        return new AuthResponse(token, "注册成功");
+        return new AuthResponse(token, savedUser.getUsername(), "注册成功");
     }
 
     public AuthResponse login(LoginRequest request) {
         String account = request.getAccount();
+        String plainPassword = requestCryptoService.decryptIfNeeded(request.getPassword());
         try {
             String username = resolveLoginUsername(account);
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, request.getPassword())
+                new UsernamePasswordAuthenticationToken(username, plainPassword)
             );
 
             String token = jwtService.generateToken(username);
             log.info("用户登录成功: account={}, username={}", account, username);
-            return new AuthResponse(token, "登录成功");
+            return new AuthResponse(token, username, "登录成功");
         } catch (BadCredentialsException ex) {
             log.warn("登录失败，密码错误: account={}", account);
             throw new ServiceException(ErrorCode.AUTH_LOGIN_FAILED, "用户名/邮箱或密码错误");
@@ -112,7 +119,7 @@ public class UserService implements UserDetailsService {
             tokenBlacklistService.blacklist(token, expiration);
             log.info("用户登出成功: username={}", jwtService.extractUsername(token));
         }
-        return new AuthResponse(null, "已成功登出");
+        return new AuthResponse(null, null, "已成功登出");
     }
 
     @Override

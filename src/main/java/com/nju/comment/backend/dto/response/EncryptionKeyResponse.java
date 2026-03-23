@@ -1,16 +1,13 @@
 package com.nju.comment.backend.dto.response;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class AuthResponse {
-    private String token;
-    private String username;
-    private String message;
+public class EncryptionKeyResponse {
+    private String algorithm;
+    private String publicKey;
 }

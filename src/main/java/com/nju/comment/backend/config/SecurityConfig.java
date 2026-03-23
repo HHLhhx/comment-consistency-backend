@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .cors(cors -> {
                 })
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/send-email-code").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/send-email-code", "/api/auth/encryption-key").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
