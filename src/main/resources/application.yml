@@ -42,17 +42,6 @@ spring:
           max-idle: 10
           min-idle: 5
           max-wait: 3000ms
-  mail:
-    host: ${SPRING_MAIL_HOST:smtp.qq.com}
-    port: ${SPRING_MAIL_PORT:587}
-    username: ${SPRING_MAIL_USERNAME:}
-    password: ${SPRING_MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
 
 # 日志配置
 logging:
@@ -105,3 +94,11 @@ app:
     request-decrypt-private-key: ${APP_SECURITY_REQUEST_DECRYPT_PRIVATE_KEY:}
     # 对应 RSA 公钥（X.509 Base64），供插件端拉取后加密请求字段
     request-encrypt-public-key: ${APP_SECURITY_REQUEST_ENCRYPT_PUBLIC_KEY:}
+  mail:
+    aliyun:
+      access-key-id: ${APP_ALIYUN_ACCESS_KEY_ID:}
+      access-key-secret: ${APP_ALIYUN_ACCESS_KEY_SECRET:}
+      account-name: ${APP_ALIYUN_ACCOUNT_NAME:}
+      region-id: ${APP_ALIYUN_REGION_ID:cn-hangzhou}
+      address-type: ${APP_ALIYUN_ADDRESS_TYPE:1}
+      from-alias: ${APP_ALIYUN_FROM_ALIAS:comment-consistency}

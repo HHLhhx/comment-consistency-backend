@@ -43,7 +43,6 @@ public enum ErrorCode {
     LLM_API_KEY_NOT_SET(2009, "未设置 API Key，请在用户设置中配置", HttpStatus.FORBIDDEN),
     LLM_API_KEY_INVALID(2010, "API Key 无效，请检查后重新配置", HttpStatus.UNAUTHORIZED),
 
-
     // ========== 提示词服务错误 3xxx ==========
     PROMPT_SERVICE_ERROR(3001, "提示词服务异常", HttpStatus.INTERNAL_SERVER_ERROR),
     PROMPT_BUILD_ERROR(3002, "提示词构建失败", HttpStatus.INTERNAL_SERVER_ERROR),
