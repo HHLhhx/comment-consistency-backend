@@ -39,8 +39,14 @@ public class EmailVerificationService {
         redisTemplate.opsForValue().set(EMAIL_CODE_KEY_PREFIX + email, code, CODE_TTL_MINUTES, TimeUnit.MINUTES);
         redisTemplate.opsForValue().set(cooldownKey, "1", SEND_COOLDOWN_SECONDS, TimeUnit.SECONDS);
 
-        mailService.sendEmail(email, "Comment Consistency 注册验证码",
-                "您本次注册验证码为：" + code + ", " + CODE_TTL_MINUTES + "分钟内有效。");
+        try {
+            mailService.sendEmail(email, "Comment Consistency 注册验证码",
+                    "您本次注册验证码为：" + code + ", " + CODE_TTL_MINUTES + "分钟内有效。");
+        } catch (ServiceException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ServiceException(ErrorCode.AUTH_EMAIL_SEND_FAILED, e.getMessage());
+        }
     }
 
     public void verifyRegisterCode(String email, String code) {
