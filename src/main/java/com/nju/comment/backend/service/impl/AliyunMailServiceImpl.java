@@ -37,8 +37,6 @@ public class AliyunMailServiceImpl implements MailService {
 
 
     public void sendEmail(String toAddress, String subject, String content) {
-        log.info("regionId: {}", regionId);
-
         DefaultProfile profile = DefaultProfile.getProfile(regionId, accessKeyId, accessKeySecret);
         IAcsClient client = new DefaultAcsClient(profile);
 
