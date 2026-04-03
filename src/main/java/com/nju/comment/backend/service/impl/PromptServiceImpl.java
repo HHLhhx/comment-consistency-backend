@@ -209,8 +209,8 @@ public class PromptServiceImpl implements PromptService {
                 String srcJavadoc = readDocumentField(document, "src_javadoc");
                 String dstJavadoc = readDocumentField(document, "dst_javadoc");
 
-                exampleContext.put("old_method", "\t" + srcMethod);
-                exampleContext.put("new_method", "\t" + dstMethod);
+                exampleContext.put("old_method", srcMethod);
+                exampleContext.put("new_method", dstMethod);
                 exampleContext.put("old_comment", srcJavadoc);
                 exampleContext.put("new_comment", dstJavadoc);
 
@@ -230,9 +230,8 @@ public class PromptServiceImpl implements PromptService {
         if (metadataValue != null) {
             if (fieldName.contains("method")) {
                 return TextProcessUtil.processMethod(metadataValue.toString());
-            } else if (fieldName.contains("javadoc")) {
-                return TextProcessUtil.processComment(metadataValue.toString());
             }
+            return metadataValue.toString();
         }
 
         try {
