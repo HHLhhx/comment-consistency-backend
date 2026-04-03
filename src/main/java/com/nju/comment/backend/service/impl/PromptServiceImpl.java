@@ -7,6 +7,7 @@ import com.nju.comment.backend.dto.request.CommentReqTag;
 import com.nju.comment.backend.dto.request.CommentRequest;
 import com.nju.comment.backend.exception.*;
 import com.nju.comment.backend.service.PromptService;
+import com.nju.comment.backend.util.TextProcessUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -55,9 +56,9 @@ public class PromptServiceImpl implements PromptService {
                 buildRagExample(request);
             }
 
-            context.put("old_method", request.getOldMethod());
-            context.put("new_method", request.getNewMethod());
-            context.put("old_comment", request.getOldComment());
+            context.put("old_method", TextProcessUtil.processMethod(request.getOldMethod()));
+            context.put("new_method", TextProcessUtil.processMethod(request.getNewMethod()));
+            context.put("old_comment", TextProcessUtil.processComment(request.getOldComment()));
 
             try {
                 PromptTemplate promptTemplate = new PromptTemplate(userCommentUpdateTemplate);
@@ -172,9 +173,9 @@ public class PromptServiceImpl implements PromptService {
             throw new ServiceException(ErrorCode.PARAMETER_ERROR, "请求参数不能为空");
         }
 
-        String oldMethod = request.getOldMethod();
-        String newMethod = request.getNewMethod();
-        String oldComment = request.getOldComment();
+        String oldMethod = TextProcessUtil.processMethod(request.getOldMethod());
+        String newMethod = TextProcessUtil.processMethod(request.getNewMethod());
+        String oldComment = TextProcessUtil.processComment(request.getOldComment());
 
         ObjectNode jsonNodes = objectMapper.createObjectNode();
         jsonNodes.put("src_method", oldMethod);
@@ -220,14 +221,18 @@ public class PromptServiceImpl implements PromptService {
             }
         }
 
-        String delimiter = "\n----------------------------\n";
+        String delimiter = "\n--------------------------------------------------------\n";
         return delimiter + String.join(delimiter, examples) + delimiter;
     }
 
     private String readDocumentField(Document document, String fieldName) {
         Object metadataValue = document.getMetadata().get(fieldName);
         if (metadataValue != null) {
-            return metadataValue.toString();
+            if (fieldName.contains("method")) {
+                return TextProcessUtil.processMethod(metadataValue.toString());
+            } else if (fieldName.contains("javadoc")) {
+                return TextProcessUtil.processComment(metadataValue.toString());
+            }
         }
 
         try {
