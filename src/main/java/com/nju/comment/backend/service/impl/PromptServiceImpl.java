@@ -99,15 +99,31 @@ public class PromptServiceImpl implements PromptService {
     @Value("classpath:prompts/prompt_rag_example.txt")
     private Resource ragExampleTemplate;
 
+    @Value("${app.vectorstore.embedding-max-input-chars:7000}")
+    private int ragMaxQueryChars;
+
     private void buildRagExample(CommentRequest request) {
         if (request == null) {
             throw new ServiceException(ErrorCode.PARAMETER_ERROR, "请求参数不能为空");
         }
 
         long startTime = System.currentTimeMillis();
+        request.setRagExample("");
+
         try {
             int k = request.getRagExampleNum();
+            if (k <= 0) {
+                log.info("RAG降级：ragExampleNum<=0，回退为普通更新注释请求，requestId={}", request.getRequestId());
+                return;
+            }
+
             String query = buildQueryForRAG(request);
+            if (isOverlongRagQuery(query)) {
+                log.warn("RAG降级：检索查询过长，回退为普通更新注释请求，requestId={}, queryLength={}, maxAllowed={}",
+                        request.getRequestId(), query.length(), Math.max(256, ragMaxQueryChars));
+                return;
+            }
+
             List<Document> topK = vectorStore.similaritySearch(
                     SearchRequest.builder()
                             .query(query)
@@ -125,12 +141,19 @@ public class PromptServiceImpl implements PromptService {
                         System.currentTimeMillis() - startTime, request.getRequestId());
                 throw new VectorStoreException(ErrorCode.VECTOR_STORE_INTERRUPTED, "RAG检索已取消", e);
             }
-            log.error("RAG检索失败", e);
-            throw new VectorStoreException(ErrorCode.VECTOR_STORE_QUERY_ERROR, "RAG检索失败", e);
+            log.warn("RAG降级：检索异常，回退为普通更新注释请求，requestId={}", request.getRequestId(), e);
         } catch (Exception e) {
-            log.error("RAG检索失败", e);
-            throw new VectorStoreException(ErrorCode.VECTOR_STORE_QUERY_ERROR, "RAG检索失败", e);
+            log.warn("RAG降级：检索异常，回退为普通更新注释请求，requestId={}", request.getRequestId(), e);
         }
+    }
+
+    private boolean isOverlongRagQuery(String query) {
+        if (query == null || query.isEmpty()) {
+            return false;
+        }
+
+        int maxChars = Math.max(256, ragMaxQueryChars);
+        return query.codePointCount(0, query.length()) > maxChars;
     }
 
     private boolean isInterrupted(Throwable throwable) {

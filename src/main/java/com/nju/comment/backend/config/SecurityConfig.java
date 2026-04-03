@@ -3,6 +3,8 @@ package com.nju.comment.backend.config;
 import com.nju.comment.backend.security.JwtAccessDeniedHandler;
 import com.nju.comment.backend.security.JwtAuthenticationEntryPoint;
 import com.nju.comment.backend.security.JwtAuthenticationFilter;
+import com.nju.comment.backend.util.ApiKeyEncryptor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -25,6 +27,14 @@ import java.util.List;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    @Value("${app.security.api-key-encrypt-key}")
+    private String apiKeyEncryptKey;
+
+    @Bean
+    public ApiKeyEncryptor apiKeyEncryptor() {
+        return new ApiKeyEncryptor(apiKeyEncryptKey);
+    }
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;

@@ -1,29 +1,24 @@
 package com.nju.comment.backend.component;
 
-import com.nju.comment.backend.config.OllamaConfig;
 import com.nju.comment.backend.context.UserApiContext;
 import com.nju.comment.backend.exception.ErrorCode;
 import com.nju.comment.backend.exception.LLMException;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.CacheService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaOptions;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.util.Collections;
-import java.util.HexFormat;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -38,15 +33,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OllamaModelFactory {
 
     private final CacheService cacheService;
-    private final OllamaConfig ollamaConfig;
 
-    @Getter
-    private final EmbeddingModel embeddingModel;
+    @Value("${app.ai.ollama.chat.base-url:http://localhost:11434}")
+    private String chatBaseUrl;
 
-    /** 缓存 key = apiKeyHash:modelName → ChatClient */
+    /**
+     * 缓存 key = apiKeyHash:modelName → ChatClient
+     */
     private final Map<String, ChatClient> clientCache = new ConcurrentHashMap<>();
 
-    /** 缓存 apiKeyHash → OllamaApi */
+    /**
+     * 缓存 apiKeyHash → OllamaApi
+     */
     private final Map<String, OllamaApi> apiCache = new ConcurrentHashMap<>();
 
     /**
@@ -105,10 +103,12 @@ public class OllamaModelFactory {
             }
 
             // 提取模型名称列表，并缓存结果
-            log.info("获取到 {} 个可用模型", listModelResponse.models().size());
             List<String> modelsList = listModelResponse.models().stream()
                     .map(OllamaApi.Model::name)
+                    .filter(model -> modelWhiteList.contains(model))
                     .toList();
+            log.info("获取到 {} 个可用模型", modelsList.size());
+
             cacheService.saveModelsList("MODELS_LIST", modelsList);
             return modelsList;
         } catch (ServiceException e) {
@@ -124,7 +124,7 @@ public class OllamaModelFactory {
      */
     private OllamaApi getOrCreateOllamaApi(String apiKey, String keyHash) {
         return apiCache.computeIfAbsent(keyHash, h -> {
-            String baseUrl = ollamaConfig.getChatBaseUrl();
+            String baseUrl = this.chatBaseUrl;
             log.info("创建 OllamaApi: baseUrl={}, keyHash={}", baseUrl, keyHash);
             RestClient.Builder builder = RestClient.builder()
                     .baseUrl(baseUrl)
@@ -148,4 +148,27 @@ public class OllamaModelFactory {
             throw new IllegalStateException("SHA-256 not available", e);
         }
     }
+
+    static List<String> modelWhiteList = List.of(
+            "qwen3-coder:480b",
+            "nemotron-3-nano:30b",
+            "glm-4.7",
+            "kimi-k2:1t",
+            "gpt-oss:120b",
+            "mistral-large-3:675b",
+            "gemma3:27b",
+            "cogito-2.1:671b",
+            "gemma3:12b",
+            "qwen3-coder-next",
+            "devstral-2:123b",
+            "rnj-1:8b",
+            "deepseek-v3.1:671b",
+            "ministral-3:14b",
+            "nemotron-3-super",
+            "gpt-oss:20b",
+            "minimax-m2.5",
+            "ministral-3:3b",
+            "ministral-3:8b",
+            "devstral-small-2:24b"
+    );
 }

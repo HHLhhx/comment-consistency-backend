@@ -72,11 +72,25 @@ app:
     ollama:
       chat:
         base-url: ${APP_AI_OLLAMA_CHAT_BASE_URL:https://ollama.com}
+    siliconflow:
       embedding:
-        base-url: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:http://localhost:11434}
-        model: ${APP_AI_OLLAMA_EMBEDDING_MODEL:qwen3-embedding:0.6b}
+        base-url: ${APP_AI_SILICONFLOW_EMBEDDING_BASE_URL:https://api.siliconflow.cn}
+        embeddings-path: ${APP_AI_SILICONFLOW_EMBEDDINGS_PATH:/v1/embeddings}
+        api-key: ${APP_AI_SILICONFLOW_EMBEDDING_API_KEY:}
+        model: ${APP_AI_SILICONFLOW_EMBEDDING_MODEL:BAAI/bge-m3}
+        max-retries: ${APP_AI_SILICONFLOW_EMBEDDING_MAX_RETRIES:5}
+        initial-backoff-ms: ${APP_AI_SILICONFLOW_EMBEDDING_INITIAL_BACKOFF_MS:1000}
+        max-backoff-ms: ${APP_AI_SILICONFLOW_EMBEDDING_MAX_BACKOFF_MS:10000}
+        rate-limit:
+          rpm: ${APP_AI_SILICONFLOW_EMBEDDING_RPM:2000}
+          tpm: ${APP_AI_SILICONFLOW_EMBEDDING_TPM:500000}
+          window-ms: ${APP_AI_SILICONFLOW_EMBEDDING_WINDOW_MS:60000}
   vectorstore:
     init: ${APP_VECTORSTORE_INIT:false}
+    embedding-batch-size: ${APP_VECTORSTORE_EMBEDDING_BATCH_SIZE:32}
+    embedding-max-input-chars: ${APP_VECTORSTORE_EMBEDDING_MAX_INPUT_CHARS:8000}
+    progress-file: ${APP_VECTORSTORE_PROGRESS_FILE:src/main/resources/docs/vectorstore-init-progress.properties}
+    clear-progress-on-success: ${APP_VECTORSTORE_CLEAR_PROGRESS_ON_SUCCESS:true}
   cache:
     comment:
       ttl: 3600 # 1小时

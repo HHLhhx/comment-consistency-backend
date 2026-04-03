@@ -37,8 +37,7 @@ services:
       APP_SECURITY_REQUEST_ENCRYPT_PUBLIC_KEY: ${REQUEST_ENCRYPT_PUBLIC_KEY:-}
       APP_VECTORSTORE_INIT: ${APP_VECTORSTORE_INIT:-false}
       APP_AI_OLLAMA_CHAT_BASE_URL: ${APP_AI_OLLAMA_CHAT_BASE_URL:-https://ollama.com}
-      APP_AI_OLLAMA_EMBEDDING_BASE_URL: ${APP_AI_OLLAMA_EMBEDDING_BASE_URL:-http://ollama:11434}
-      APP_AI_OLLAMA_EMBEDDING_MODEL: ${APP_AI_OLLAMA_EMBEDDING_MODEL:-qwen3-embedding:0.6b}
+      APP_AI_SILICONFLOW_EMBEDDING_API_KEY: ${APP_AI_SILICONFLOW_EMBEDDING_API_KEY:-}
       APP_ALIYUN_ACCESS_KEY_ID: ${APP_ALIYUN_ACCESS_KEY_ID:-}
       APP_ALIYUN_ACCESS_KEY_SECRET: ${APP_ALIYUN_ACCESS_KEY_SECRET:-}
       APP_ALIYUN_ACCOUNT_NAME: ${APP_ALIYUN_ACCOUNT_NAME:-}
@@ -46,17 +45,7 @@ services:
     depends_on:
       - mysql
       - redis
-      - ollama
       - standalone
-
-  ollama:
-    container_name: ccb-ollama
-    image: ollama/ollama:latest
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/ollama:/root/.ollama
 
   mysql:
     container_name: ccb-mysql
