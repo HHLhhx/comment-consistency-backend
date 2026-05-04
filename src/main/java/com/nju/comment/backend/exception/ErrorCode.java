@@ -42,6 +42,8 @@ public enum ErrorCode {
     LLM_CONNECTION_ERROR(2008, "LLM连接失败", HttpStatus.SERVICE_UNAVAILABLE),
     LLM_API_KEY_NOT_SET(2009, "未设置 API Key，请在用户设置中配置", HttpStatus.FORBIDDEN),
     LLM_API_KEY_INVALID(2010, "API Key 无效，请检查后重新配置", HttpStatus.UNAUTHORIZED),
+    LLM_RATE_LIMIT(2011, "LLM 服务限流，请稍后重试", HttpStatus.TOO_MANY_REQUESTS),
+    LLM_BASE_URL_INVALID(2012, "LLM 服务地址无效，请检查 Base URL", HttpStatus.BAD_REQUEST),
 
     // ========== 提示词服务错误 3xxx ==========
     PROMPT_SERVICE_ERROR(3001, "提示词服务异常", HttpStatus.INTERNAL_SERVER_ERROR),

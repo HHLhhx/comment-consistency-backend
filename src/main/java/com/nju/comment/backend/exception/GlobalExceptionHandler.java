@@ -247,7 +247,9 @@ public class GlobalExceptionHandler {
                 || errorCode == ErrorCode.AUTH_EMAIL_CODE_INVALID
                 || errorCode == ErrorCode.AUTH_PASSWORD_CONFIRM_MISMATCH
                 || errorCode == ErrorCode.LLM_API_KEY_INVALID
-                || errorCode == ErrorCode.LLM_API_KEY_NOT_SET;
+                || errorCode == ErrorCode.LLM_API_KEY_NOT_SET
+                || errorCode == ErrorCode.LLM_RATE_LIMIT
+                || errorCode == ErrorCode.LLM_BASE_URL_INVALID;
     }
 }
 

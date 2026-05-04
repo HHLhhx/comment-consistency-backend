@@ -57,16 +57,17 @@ public class CommentServiceImpl implements CommentService {
 
         long timeoutMs = resolveTimeoutMs(request);
 
-        // 在请求线程中捕获用户名和 API Key，避免异步线程池中 SecurityContext 不可用
+        // 在请求线程中捕获用户名和 API Key/Base URL，避免异步线程池中 SecurityContext 不可用
         String userApiKey = userApiKeyService.getDecryptedApiKey(username);
         if (userApiKey == null || userApiKey.isBlank()) {
             throw new ServiceException(ErrorCode.LLM_API_KEY_NOT_SET);
         }
+        String userBaseUrl = userApiKeyService.getBaseUrl(username);
 
         // 使用专用线程池执行，并将真正执行的 Future 注册到取消管理器，确保 cancel(true) 能中断线程
         CompletableFuture<CommentResponse> future = CompletableFuture.supplyAsync(() -> {
-            // 在异步线程中设置 API Key 上下文
-            UserApiContext.setApiKey(userApiKey);
+            // 在异步线程中设置 API Key + Base URL 上下文
+            UserApiContext.setCredential(userApiKey, userBaseUrl);
             // 注册当前执行线程，使得cancel时能直接中断阻塞I/O（如LLM网络请求）
             requestCancelRegistry.registerThread(requestId, Thread.currentThread());
             Instant startTime = Instant.now();

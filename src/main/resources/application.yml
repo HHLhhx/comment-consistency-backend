@@ -69,9 +69,15 @@ app:
   ai:
     llm:
       timeout-ms: 30000
-    ollama:
+    openai:
       chat:
-        base-url: ${APP_AI_OLLAMA_CHAT_BASE_URL:https://ollama.com}
+        # 默认走 OpenAI 官方端点，用户也可在用户设置中按需覆盖为兼容 OpenAI 协议的供应商地址
+        # 例如：https://api.deepseek.com、https://dashscope.aliyuncs.com/compatible-mode、
+        #       https://api.moonshot.cn、https://open.bigmodel.cn/api/paas 等
+        base-url: ${APP_AI_OPENAI_CHAT_BASE_URL:https://api.openai.com}
+        # OpenAI 协议下 chat completion / models 列表的统一前缀
+        completions-path: ${APP_AI_OPENAI_CHAT_COMPLETIONS_PATH:/v1/chat/completions}
+        models-path: ${APP_AI_OPENAI_CHAT_MODELS_PATH:/v1/models}
     siliconflow:
       embedding:
         base-url: ${APP_AI_SILICONFLOW_EMBEDDING_BASE_URL:https://api.siliconflow.cn}

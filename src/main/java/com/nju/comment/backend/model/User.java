@@ -25,8 +25,29 @@ public class User {
     @Convert(converter = UserRoleConverter.class)
     private UserRole role = UserRole.USER;
 
-    @Column(length = 512)
-    private String ollamaApiKey;
+    /**
+     * 用户的 LLM API Key（OpenAI 协议兼容供应商，密文存储）。
+     * <p>
+     * 列名沿用 {@code ollama_api_key}，保留与历史数据库结构兼容；
+     * 内部已不再仅限 Ollama，可填入任何 OpenAI 协议兼容供应商的 Key。
+     */
+    @Column(name = "ollama_api_key", length = 512)
+    private String llmApiKey;
+
+    /**
+     * 用户的 LLM 服务 Base URL（OpenAI 协议兼容端点）。
+     * <p>
+     * 例如：
+     * <ul>
+     *     <li>https://api.openai.com</li>
+     *     <li>https://api.deepseek.com</li>
+     *     <li>https://dashscope.aliyuncs.com/compatible-mode</li>
+     *     <li>https://api.moonshot.cn</li>
+     * </ul>
+     * 为空时回退到全局配置 {@code app.ai.openai.chat.base-url}。
+     */
+    @Column(name = "llm_base_url", length = 256)
+    private String llmBaseUrl;
 
     @CreatedDate
     @Column(nullable = false)

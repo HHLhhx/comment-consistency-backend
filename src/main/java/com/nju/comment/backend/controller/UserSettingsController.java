@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 用户设置控制器
  * <p>
- * 管理用户个人配置，当前包括 Ollama API Key 的增删改查。
+ * 管理用户个人配置，当前包括 OpenAI 协议兼容的 LLM API Key 与 Base URL 的增删改查。
  */
 @RestController
 @RequestMapping("/api/settings")
@@ -34,7 +34,7 @@ public class UserSettingsController {
             @Valid @RequestBody ApiKeyRequest request
     ) {
         String plainApiKey = requestCryptoService.decryptIfNeeded(request.getApiKey());
-        userApiKeyService.saveApiKey(userDetails.getUsername(), plainApiKey);
+        userApiKeyService.saveApiKey(userDetails.getUsername(), plainApiKey, request.getBaseUrl());
         return ResponseEntity.ok(ApiResponse.success("API Key 已保存", null));
     }
 

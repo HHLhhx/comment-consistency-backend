@@ -11,9 +11,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 /**
- * 用户 API Key 管理服务
+ * 用户 LLM 凭证管理服务
  * <p>
- * 负责加密存储、解密读取用户的 Ollama API Key。
+ * 负责加密存储/解密读取用户的 OpenAI 协议兼容 API Key，
+ * 同时管理用户自定义的 LLM Base URL（兼容 DeepSeek / Qwen / Moonshot 等）。
  */
 @Service
 @Slf4j
@@ -24,14 +25,23 @@ public class UserApiKeyService {
     private final ApiKeyEncryptor apiKeyEncryptor;
 
     /**
-     * 保存（或更新）用户的 API Key
+     * 保存（或更新）用户的 API Key 与可选的 Base URL。
+     *
+     * @param username    用户名
+     * @param plainApiKey 明文 API Key
+     * @param baseUrl     OpenAI 协议兼容供应商的 Base URL，{@code null} 或空表示沿用全局默认
      */
-    public void saveApiKey(String username, String plainApiKey) {
+    public void saveApiKey(String username, String plainApiKey, String baseUrl) {
         User user = findUser(username);
         String encrypted = apiKeyEncryptor.encrypt(plainApiKey);
-        user.setOllamaApiKey(encrypted);
+        user.setLlmApiKey(encrypted);
+        // 仅当显式传入非空 baseUrl 时才覆盖；空字符串视为清空回退默认
+        if (baseUrl != null) {
+            user.setLlmBaseUrl(StringUtils.hasText(baseUrl) ? baseUrl.trim() : null);
+        }
         userRepository.save(user);
-        log.info("用户 {} 的 API Key 已更新", username);
+        log.info("用户 {} 的 LLM 凭证已更新（baseUrl 是否设置: {}）",
+                username, StringUtils.hasText(user.getLlmBaseUrl()));
     }
 
     /**
@@ -39,10 +49,18 @@ public class UserApiKeyService {
      */
     public String getDecryptedApiKey(String username) {
         User user = findUser(username);
-        if (!StringUtils.hasText(user.getOllamaApiKey())) {
+        if (!StringUtils.hasText(user.getLlmApiKey())) {
             return null;
         }
-        return apiKeyEncryptor.decrypt(user.getOllamaApiKey());
+        return apiKeyEncryptor.decrypt(user.getLlmApiKey());
+    }
+
+    /**
+     * 获取用户配置的 Base URL，未设置时返回 null（由调用方回退到全局默认）。
+     */
+    public String getBaseUrl(String username) {
+        User user = findUser(username);
+        return StringUtils.hasText(user.getLlmBaseUrl()) ? user.getLlmBaseUrl() : null;
     }
 
     /**
@@ -50,17 +68,18 @@ public class UserApiKeyService {
      */
     public boolean hasApiKey(String username) {
         User user = findUser(username);
-        return StringUtils.hasText(user.getOllamaApiKey());
+        return StringUtils.hasText(user.getLlmApiKey());
     }
 
     /**
-     * 删除用户的 API Key
+     * 删除用户的 API Key 与 Base URL 配置
      */
     public void deleteApiKey(String username) {
         User user = findUser(username);
-        user.setOllamaApiKey(null);
+        user.setLlmApiKey(null);
+        user.setLlmBaseUrl(null);
         userRepository.save(user);
-        log.info("用户 {} 的 API Key 已删除", username);
+        log.info("用户 {} 的 LLM 凭证已删除", username);
     }
 
     /**
