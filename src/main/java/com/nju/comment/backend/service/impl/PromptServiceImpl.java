@@ -255,7 +255,7 @@ public class PromptServiceImpl implements PromptService {
             throw new ServiceException(ErrorCode.PARAMETER_ERROR, "请求参数不能为空");
         }
 
-        if (request.getOldComment() != null && !request.getOldComment().isEmpty()) {
+        if (!CommentReqTag.GENERATE.equals(request.getTag())) {
             // 更新注释场景
             try (InputStream is = systemCommentUpdatePrompt.getInputStream()) {
                 return StreamUtils.copyToString(is, Charset.defaultCharset());
