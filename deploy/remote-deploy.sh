@@ -39,17 +39,33 @@ resolve_spring_user_ids() {
   SPRING_GID="$(docker run --rm --entrypoint sh "$IMAGE_TAG" -c 'id -g spring 2>/dev/null || id -g')"
 }
 
-prepare_backend_logs_dir() {
+prepare_volumes() {
   VOLUME_ROOT="$(resolve_volume_root)"
-  LOG_DIR="${VOLUME_ROOT}/volumes/backend/logs"
 
+  # Backend logs
+  LOG_DIR="${VOLUME_ROOT}/volumes/backend/logs"
   mkdir -p "$LOG_DIR"
 
+  # Prometheus data
+  PROMETHEUS_DIR="${VOLUME_ROOT}/volumes/prometheus"
+  mkdir -p "$PROMETHEUS_DIR"
+
+  # Grafana data
+  GRAFANA_DIR="${VOLUME_ROOT}/volumes/grafana"
+  mkdir -p "$GRAFANA_DIR"
+
+  # 获取容器运行用户的 uid/gid
   resolve_spring_user_ids
 
-  # Run permission fix through Docker daemon to avoid requiring root shell user.
+  # 修复所有 volume 权限
   docker run --rm -v "$LOG_DIR":/target alpine:3.20 sh -c \
     "chown -R ${SPRING_UID}:${SPRING_GID} /target && chmod -R ug+rwX /target"
+
+  docker run --rm -v "$PROMETHEUS_DIR":/target alpine:3.20 sh -c \
+    "chown -R 65534:65534 /target && chmod -R ug+rwX /target"
+
+  docker run --rm -v "$GRAFANA_DIR":/target alpine:3.20 sh -c \
+    "chown -R 472:472 /target && chmod -R ug+rwX /target"
 }
 
 require_env() {
@@ -128,7 +144,7 @@ EOF
 
 chmod 600 .env.production
 
-prepare_backend_logs_dir
+prepare_volumes
 
 docker compose --env-file .env.production -f docker-compose.yml pull
 docker compose --env-file .env.production -f docker-compose.yml up -d --remove-orphans
