@@ -89,16 +89,9 @@ if [ ! -d "$DEPLOY_PATH/.git" ]; then
 fi
 
 cd "$DEPLOY_PATH"
-
-git fetch --prune origin "$BRANCH_NAME"
-git reset --hard "origin/$BRANCH_NAME"
-git clean -fdx
-
-if git rev-parse --verify "$BRANCH_NAME" >/dev/null 2>&1; then
-  git checkout "$BRANCH_NAME"
-else
-  git checkout -b "$BRANCH_NAME" "origin/$BRANCH_NAME"
-fi
+git fetch origin "$BRANCH_NAME"
+git checkout "$BRANCH_NAME"
+git pull --ff-only origin "$BRANCH_NAME"
 
 cat > .env.production <<EOF
 APP_IMAGE=${IMAGE_TAG}
