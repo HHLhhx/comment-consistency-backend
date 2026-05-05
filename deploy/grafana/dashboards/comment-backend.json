@@ -1,0 +1,362 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "uid": "comment-backend",
+  "title": "Comment Consistency Backend",
+  "tags": ["spring-boot", "llm", "comment-consistency"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": { "text": "Prometheus", "value": "Prometheus" }
+      },
+      {
+        "name": "application",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "${datasource}" },
+        "query": "label_values(jvm_memory_used_bytes, application)",
+        "refresh": 1,
+        "current": { "text": "comment-backend", "value": "comment-backend" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "概览",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "应用存活",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "targets": [
+        { "expr": "up{job=\"comment-backend\"}", "legendFormat": "up" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" }, "1": { "text": "UP", "color": "green" } } }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": { "colorMode": "background" }
+    },
+    {
+      "type": "stat",
+      "title": "在途 LLM 调用",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "targets": [
+        { "expr": "sum(llm_request_inflight{application=\"$application\"})", "legendFormat": "inflight" }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "QPS（HTTP）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "id": 3,
+      "targets": [
+        { "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\"}[1m]))", "legendFormat": "qps" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "stat",
+      "title": "错误率（HTTP 5xx）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",status=~\"5..\"}[5m])) / clamp_min(sum(rate(http_server_requests_seconds_count{application=\"$application\"}[5m])),1e-9)",
+          "legendFormat": "5xx ratio"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.01 },
+              { "color": "red", "value": 0.05 }
+            ]
+          }
+        }
+      },
+      "options": { "colorMode": "background" }
+    },
+    {
+      "type": "stat",
+      "title": "注释缓存命中率（5m）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum(rate(comment_generation_total{application=\"$application\",outcome=\"cached\"}[5m])) / clamp_min(sum(rate(comment_generation_total{application=\"$application\"}[5m])),1e-9)",
+          "legendFormat": "hit ratio"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } }
+    },
+    {
+      "type": "row",
+      "title": "JVM",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "id": 101,
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "JVM 堆内存",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 6 },
+      "id": 10,
+      "targets": [
+        { "expr": "sum(jvm_memory_used_bytes{application=\"$application\",area=\"heap\"})", "legendFormat": "used" },
+        { "expr": "sum(jvm_memory_max_bytes{application=\"$application\",area=\"heap\"})", "legendFormat": "max" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "线程数 / GC 暂停",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 6 },
+      "id": 11,
+      "targets": [
+        { "expr": "jvm_threads_live_threads{application=\"$application\"}", "legendFormat": "threads_live" },
+        { "expr": "rate(jvm_gc_pause_seconds_sum{application=\"$application\"}[1m])", "legendFormat": "gc_pause_rate {{action}}" }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "HTTP",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 102,
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP 请求速率（按 URI）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "id": 20,
+      "targets": [
+        {
+          "expr": "sum by (uri) (rate(http_server_requests_seconds_count{application=\"$application\"}[1m]))",
+          "legendFormat": "{{uri}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP P95 延迟（按 URI）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "id": 21,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{application=\"$application\"}[5m])))",
+          "legendFormat": "p95 {{uri}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "row",
+      "title": "LLM",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "id": 103,
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM 调用速率（按 outcome）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 22 },
+      "id": 30,
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(llm_request_total{application=\"$application\"}[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM 延迟（P50/P95/P99）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 22 },
+      "id": 31,
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(llm_request_duration_seconds_bucket{application=\"$application\",outcome=\"success\"}[5m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(llm_request_duration_seconds_bucket{application=\"$application\",outcome=\"success\"}[5m])))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(llm_request_duration_seconds_bucket{application=\"$application\",outcome=\"success\"}[5m])))", "legendFormat": "p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM 调用按模型",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 29 },
+      "id": 32,
+      "targets": [
+        {
+          "expr": "sum by (model) (rate(llm_request_total{application=\"$application\"}[5m]))",
+          "legendFormat": "{{model}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM 错误（按 error 码）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 29 },
+      "id": 33,
+      "targets": [
+        {
+          "expr": "sum by (error) (rate(llm_request_total{application=\"$application\",outcome!=\"success\",error!=\"none\"}[5m]))",
+          "legendFormat": "{{error}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "row",
+      "title": "注释生成",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 36 },
+      "id": 104,
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "注释生成结果分布",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 37 },
+      "id": 40,
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(comment_generation_total{application=\"$application\"}[1m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "注释生成 P95 延迟",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 37 },
+      "id": 41,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, outcome) (rate(comment_generation_duration_seconds_bucket{application=\"$application\"}[5m])))",
+          "legendFormat": "p95 {{outcome}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "type": "row",
+      "title": "错误码 / 缓存 / Redis / DB",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "id": 105,
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "业务错误码 TopN（5m 速率）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 45 },
+      "id": 50,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (code) (rate(app_error_total{application=\"$application\"}[5m])))",
+          "legendFormat": "{{code}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" } }
+    },
+    {
+      "type": "timeseries",
+      "title": "Caffeine 缓存命中/未命中",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 45 },
+      "id": 51,
+      "targets": [
+        {
+          "expr": "sum by (cache, result) (rate(cache_gets_total{application=\"$application\"}[5m]))",
+          "legendFormat": "{{cache}} - {{result}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "DataSource 连接（HikariCP）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 52 },
+      "id": 52,
+      "targets": [
+        { "expr": "hikaricp_connections_active{application=\"$application\"}", "legendFormat": "active" },
+        { "expr": "hikaricp_connections_idle{application=\"$application\"}", "legendFormat": "idle" },
+        { "expr": "hikaricp_connections_pending{application=\"$application\"}", "legendFormat": "pending" }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Redis 命令耗时（P95）",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 52 },
+      "id": 53,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, command) (rate(spring_data_redis_commands_seconds_bucket{application=\"$application\"}[5m])))",
+          "legendFormat": "p95 {{command}}"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    }
+  ]
+}

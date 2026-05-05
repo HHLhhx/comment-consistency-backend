@@ -46,6 +46,7 @@ public class CommentServiceImpl implements CommentService {
     private final RequestCancelRegistry requestCancelRegistry;
     private final ThreadPoolTaskExecutor llmTaskExecutor;
     private final ScheduledExecutorService llmTimeoutScheduler;
+    private final MetricsService metricsService;
 
     @Value("${app.ai.llm.timeout-ms:30000}")
     private long defaultTimeoutMs;
@@ -77,6 +78,9 @@ public class CommentServiceImpl implements CommentService {
                 // 检查请求是否已被取消
                 if (isStopped(requestId)) {
                     log.warn("注释生成请求已被取消, requestId={}", requestId);
+                    metricsService.recordCommentGeneration("cancelled",
+                            request.getModelName(),
+                            Duration.between(startTime, Instant.now()));
                     return CommentResponse.cancelled(requestId);
                 }
 
@@ -85,16 +89,23 @@ public class CommentServiceImpl implements CommentService {
                 String cachedComment = cacheService.getComment(key);
                 if (cachedComment != null) {
                     log.info("注释生成请求命中缓存, requestId={}", requestId);
+                    metricsService.recordCommentCacheHit();
+                    Duration elapsed = Duration.between(startTime, Instant.now());
+                    metricsService.recordCommentGeneration("cached",
+                            request.getModelName(), elapsed);
                     // 重建本次请求的上下文字段
                     return CommentResponse.success(cachedComment)
                             .withRequestId(requestId)
                             .withModelUsed(request.getModelName())
-                            .withProcessingTime(Duration.between(startTime, Instant.now()).toMillis());
+                            .withProcessingTime(elapsed.toMillis());
                 }
 
                 // 再次检查请求是否已被取消
                 if (isStopped(requestId)) {
                     log.warn("注释生成请求在缓存检查后被取消, requestId={}", requestId);
+                    metricsService.recordCommentGeneration("cancelled",
+                            request.getModelName(),
+                            Duration.between(startTime, Instant.now()));
                     return CommentResponse.cancelled(requestId);
                 }
 
@@ -108,6 +119,9 @@ public class CommentServiceImpl implements CommentService {
                             isStopped(requestId) ||
                             Thread.currentThread().isInterrupted()) {
                         log.info("注释生成在LLM调用阶段被中断, requestId={}", requestId);
+                        metricsService.recordCommentGeneration("cancelled",
+                                request.getModelName(),
+                                Duration.between(startTime, Instant.now()));
                         return CommentResponse.cancelled(requestId);
                     }
                     // 其他ServiceException直接抛出
@@ -117,6 +131,9 @@ public class CommentServiceImpl implements CommentService {
                 // 再次检查是否在生成过程中被取消
                 if (isStopped(requestId)) {
                     log.info("注释生成在后处理阶段被取消, requestId={}", requestId);
+                    metricsService.recordCommentGeneration("cancelled",
+                            request.getModelName(),
+                            Duration.between(startTime, Instant.now()));
                     return CommentResponse.cancelled(requestId);
                 }
 
@@ -127,6 +144,9 @@ public class CommentServiceImpl implements CommentService {
                 cacheService.saveComment(key, processedComment);
                 if (isStopped(requestId)) {
                     log.info("注释生成在缓存保存后被取消, requestId={}", requestId);
+                    metricsService.recordCommentGeneration("cancelled",
+                            request.getModelName(),
+                            Duration.between(startTime, Instant.now()));
                     return CommentResponse.cancelled(requestId);
                 }
 
@@ -137,12 +157,22 @@ public class CommentServiceImpl implements CommentService {
                         .withProcessingTime(Duration.between(startTime, Instant.now()).toMillis());
 
                 log.info("注释生成请求处理完成, requestId={}, 耗时={}ms", requestId, response.getProcessingTimeMs());
+                metricsService.recordCommentGeneration("success",
+                        request.getModelName(),
+                        Duration.ofMillis(response.getProcessingTimeMs()));
                 return response;
             } catch (ServiceException e) {
                 log.warn("注释生成请求处理失败, requestId={}", requestId);
+                String outcome = ErrorCode.LLM_TIMEOUT.equals(e.getErrorCode()) ? "timeout" : "failure";
+                metricsService.recordCommentGeneration(outcome,
+                        request.getModelName(),
+                        Duration.between(startTime, Instant.now()));
                 throw e;
             } catch (Exception e) {
                 log.error("注释生成请求处理失败, requestId={}", requestId);
+                metricsService.recordCommentGeneration("failure",
+                        request.getModelName(),
+                        Duration.between(startTime, Instant.now()));
                 throw new ServiceException(ErrorCode.COMMENT_SERVICE_ERROR, e);
             } finally {
                 // 清理上下文和线程注册，避免内存泄漏

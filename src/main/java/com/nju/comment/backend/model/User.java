@@ -27,11 +27,8 @@ public class User {
 
     /**
      * 用户的 LLM API Key（OpenAI 协议兼容供应商，密文存储）。
-     * <p>
-     * 列名沿用 {@code ollama_api_key}，保留与历史数据库结构兼容；
-     * 内部已不再仅限 Ollama，可填入任何 OpenAI 协议兼容供应商的 Key。
      */
-    @Column(name = "ollama_api_key", length = 512)
+    @Column(name = "openai_api_key", length = 512)
     private String llmApiKey;
 
     /**

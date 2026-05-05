@@ -1,8 +1,10 @@
 package com.nju.comment.backend.exception;
 
 import com.nju.comment.backend.dto.response.ApiResponse;
+import com.nju.comment.backend.service.impl.MetricsService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.RedisSystemException;
@@ -25,7 +27,10 @@ import java.util.concurrent.TimeoutException;
  */
 @RestControllerAdvice
 @Slf4j
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final MetricsService metricsService;
 
     /**
      * 处理参数校验异常（@Valid）
@@ -132,6 +137,9 @@ public class GlobalExceptionHandler {
                     request.getRequestURI(), errorCode.getCode(), ex.getMessage(), requestId, ex.getData(), ex);
         }
 
+        // 业务异常一律纳入指标统计，便于按错误码维度看趋势
+        metricsService.recordError(errorCode, request.getRequestURI());
+
         return ResponseEntity
                 .status(errorCode.getHttpStatus())
                 .body(ApiResponse.error(ex.getMessage(), errorCode.getCode()));
@@ -225,6 +233,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         log.error("系统未知异常: uri={}", request.getRequestURI(), ex);
+        metricsService.recordError(ErrorCode.SYSTEM_ERROR, request.getRequestURI());
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)

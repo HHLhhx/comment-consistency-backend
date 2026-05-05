@@ -8,6 +8,7 @@ import com.nju.comment.backend.exception.LLMException;
 import com.nju.comment.backend.exception.ServiceException;
 import com.nju.comment.backend.service.LLMService;
 import com.nju.comment.backend.service.PromptService;
+import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -26,6 +27,7 @@ public class LLMServiceImpl implements LLMService {
     private final OpenAiModelFactory openAiModelFactory;
     private final UserApiKeyService userApiKeyService;
     private final PromptService promptService;
+    private final MetricsService metricsService;
 
     @Override
     public String generateComment(CommentRequest request) {
@@ -35,6 +37,10 @@ public class LLMServiceImpl implements LLMService {
 
         long startTime = System.currentTimeMillis();
         String requestId = request.getRequestId();
+        String model = request.getModelName();
+        Timer.Sample sample = metricsService.startLlmCall();
+        String outcome = "failure";
+        ErrorCode errorCode = ErrorCode.LLM_SERVICE_ERROR;
 
         try {
             // 调用前检查中断状态
@@ -42,7 +48,7 @@ public class LLMServiceImpl implements LLMService {
                 throw new InterruptedException("线程已被中断");
             }
 
-            ChatClient client = openAiModelFactory.getChatModelClient(request.getModelName());
+            ChatClient client = openAiModelFactory.getChatModelClient(model);
             String systemPrompt = promptService.getSystemPrompt(request);
             String userPrompt = promptService.buildUserPrompt(request);
 
@@ -62,6 +68,8 @@ public class LLMServiceImpl implements LLMService {
 
             long duration = System.currentTimeMillis() - startTime;
             log.debug("LLM生成注释完成，耗时：{}ms，requestId：{}，内容：\n{}", duration, requestId, result);
+            outcome = "success";
+            errorCode = null;
             return result;
 
         } catch (ResourceAccessException e) {
@@ -70,9 +78,12 @@ public class LLMServiceImpl implements LLMService {
                 log.info("LLM生成注释在执行中被中断，耗时：{}ms，requestId：{}",
                         elapsed(startTime), requestId);
                 Thread.currentThread().interrupt();
+                outcome = "interrupted";
+                errorCode = ErrorCode.LLM_INTERRUPTED;
                 throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", requestId);
             }
             log.error("LLM网络请求失败，requestId：{}", requestId, e);
+            errorCode = ErrorCode.LLM_CONNECTION_ERROR;
             throw new LLMException(ErrorCode.LLM_CONNECTION_ERROR, "LLM连接失败", e);
 
         } catch (NonTransientAiException e) {
@@ -80,40 +91,51 @@ public class LLMServiceImpl implements LLMService {
             String msg = e.getMessage() != null ? e.getMessage() : "";
             if (msg.contains("401") || msg.contains("403")) {
                 log.warn("401、403报错，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
+                errorCode = ErrorCode.LLM_API_KEY_INVALID;
                 throw new LLMException(ErrorCode.LLM_API_KEY_INVALID,
                         "API Key 无效，请检查后重新配置: " + e.getMessage(), requestId);
             }
             if (msg.contains("404")) {
                 log.warn("404报错，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
+                errorCode = ErrorCode.LLM_MODEL_NOT_FOUND;
                 throw new LLMException(ErrorCode.LLM_MODEL_NOT_FOUND,
                         e.getMessage(), requestId);
             }
             if (msg.contains("429")) {
                 log.warn("LLM 服务限流，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
+                errorCode = ErrorCode.LLM_RATE_LIMIT;
                 throw new LLMException(ErrorCode.LLM_RATE_LIMIT,
                         "LLM 服务限流，请稍后重试", requestId);
             }
             log.error("LLM服务请求被拒绝，耗时：{}ms，requestId：{}", elapsed(startTime), requestId, e);
+            errorCode = ErrorCode.LLM_SERVICE_ERROR;
             throw new LLMException(ErrorCode.LLM_SERVICE_ERROR, "LLM服务请求失败: " + msg, e);
 
         } catch (TransientAiException e) {
             // OpenAI 协议下可重试错误（5xx / 网络抖动）经过 Spring AI retry 仍失败
             log.error("LLM 服务暂时不可用，耗时：{}ms，requestId：{}", elapsed(startTime), requestId, e);
+            errorCode = ErrorCode.LLM_UNAVAILABLE;
             throw new LLMException(ErrorCode.LLM_UNAVAILABLE,
                     "LLM 服务暂时不可用，请稍后重试", e);
 
         } catch (InterruptedException e) {
             log.info("LLM生成注释被中断，耗时：{}ms，requestId：{}", elapsed(startTime), requestId);
             Thread.currentThread().interrupt();
+            outcome = "interrupted";
+            errorCode = ErrorCode.LLM_INTERRUPTED;
             throw new LLMException(ErrorCode.LLM_INTERRUPTED, "请求已取消", requestId);
 
         } catch (ServiceException e) {
             // PromptService / OpenAiModelFactory 等内部组件抛出的业务异常，直接透传
+            errorCode = e.getErrorCode();
             throw e;
 
         } catch (Exception e) {
             log.error("LLM生成注释失败，耗时：{}ms，requestId：{}", elapsed(startTime), requestId, e);
+            errorCode = ErrorCode.LLM_SERVICE_ERROR;
             throw new LLMException(ErrorCode.LLM_SERVICE_ERROR, "LLM服务异常", e);
+        } finally {
+            metricsService.recordLlmCall(sample, model, outcome, errorCode);
         }
     }
 

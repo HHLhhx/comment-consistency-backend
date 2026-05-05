@@ -119,6 +119,21 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- 监控（Actuator + Micrometer Prometheus） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <!-- 用于 @Timed/@Counted 注解 AOP -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+        </dependency>
+
         <!-- 工具 -->
         <dependency>
             <groupId>org.projectlombok</groupId>

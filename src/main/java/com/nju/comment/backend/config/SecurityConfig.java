@@ -56,6 +56,9 @@ public class SecurityConfig {
                 })
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/send-email-code", "/api/auth/encryption-key").permitAll()
+                        // 监控端点：健康/信息/Prometheus 抓取无需登录；其余 actuator 仍需登录
+                        .requestMatchers("/actuator/health", "/actuator/health/**",
+                                "/actuator/info", "/actuator/prometheus").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex

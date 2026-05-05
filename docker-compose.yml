@@ -12,7 +12,13 @@ services:
 
   backend:
     container_name: ccb-backend
-    image: ${APP_IMAGE:-ghcr.io/hhlhhx/comment-consistency-backend:latest}
+    # 本地：若本机没有该 tag 的镜像，docker compose 会用下面的 build 段从源码构建。
+    # 生产 / CI：APP_IMAGE 通常被设为 ghcr.io/<owner>/<repo>:<sha>，docker compose 会直接使用远程镜像。
+    image: ${APP_IMAGE:-comment-consistency-backend:local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    pull_policy: missing
     restart: unless-stopped
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"
@@ -36,7 +42,7 @@ services:
       APP_SECURITY_REQUEST_DECRYPT_PRIVATE_KEY: ${REQUEST_DECRYPT_PRIVATE_KEY:-}
       APP_SECURITY_REQUEST_ENCRYPT_PUBLIC_KEY: ${REQUEST_ENCRYPT_PUBLIC_KEY:-}
       APP_VECTORSTORE_INIT: ${APP_VECTORSTORE_INIT:-false}
-      APP_AI_OLLAMA_CHAT_BASE_URL: ${APP_AI_OLLAMA_CHAT_BASE_URL:-https://ollama.com}
+      APP_AI_OPENAI_CHAT_BASE_URL: ${APP_AI_OPENAI_CHAT_BASE_URL:-https://api.openai.com}
       APP_AI_SILICONFLOW_EMBEDDING_API_KEY: ${APP_AI_SILICONFLOW_EMBEDDING_API_KEY:-}
       APP_ALIYUN_ACCESS_KEY_ID: ${APP_ALIYUN_ACCESS_KEY_ID:-}
       APP_ALIYUN_ACCESS_KEY_SECRET: ${APP_ALIYUN_ACCESS_KEY_SECRET:-}
@@ -145,6 +151,42 @@ services:
     depends_on:
       - "etcd"
       - "minio"
+
+  # =============== 监控栈 ===============
+  prometheus:
+    container_name: ccb-prometheus
+    image: prom/prometheus:v2.55.1
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.enable-lifecycle
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/prometheus:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      - backend
+
+  grafana:
+    container_name: ccb-grafana
+    image: grafana/grafana:11.3.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD is required}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/grafana:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    depends_on:
+      - prometheus
 
 networks:
   default:

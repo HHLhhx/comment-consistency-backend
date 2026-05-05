@@ -2,6 +2,38 @@
 server:
   port: ${SERVER_PORT:8080}
 
+# 监控（Spring Boot Actuator + Micrometer Prometheus）
+management:
+  endpoints:
+    web:
+      base-path: /actuator
+      exposure:
+        # Prometheus 抓 /actuator/prometheus；其余按需开放
+        include: health,info,metrics,prometheus,loggers,env,beans,mappings,caches
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+        step: 30s
+  metrics:
+    tags:
+      application: ${spring.application.name:comment-backend}
+      env: ${APP_ENV:default}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+        llm.request.duration: true
+        comment.generation.duration: true
+      percentiles:
+        http.server.requests: 0.5,0.95,0.99
+        llm.request.duration: 0.5,0.95,0.99
+        comment.generation.duration: 0.5,0.95,0.99
+
 # Spring Boot 应用配置
 spring:
   application:
