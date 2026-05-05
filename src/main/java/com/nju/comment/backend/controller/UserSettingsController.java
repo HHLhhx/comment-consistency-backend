@@ -1,6 +1,7 @@
 package com.nju.comment.backend.controller;
 
 import com.nju.comment.backend.dto.request.ApiKeyRequest;
+import com.nju.comment.backend.dto.response.ApiKeyInfoResponse;
 import com.nju.comment.backend.dto.response.ApiResponse;
 import com.nju.comment.backend.service.impl.RequestCryptoService;
 import com.nju.comment.backend.service.impl.UserApiKeyService;
@@ -35,23 +36,25 @@ public class UserSettingsController {
     ) {
         String plainApiKey = requestCryptoService.decryptIfNeeded(request.getApiKey());
         userApiKeyService.saveApiKey(userDetails.getUsername(), plainApiKey, request.getBaseUrl());
-        return ResponseEntity.ok(ApiResponse.success("API Key 已保存", null));
+        return ResponseEntity.ok(ApiResponse.success("API 配置已保存", null));
     }
 
     @GetMapping("/api-key")
-    public ResponseEntity<ApiResponse<String>> checkApiKey(@AuthenticationPrincipal UserDetails userDetails) {
+    public ResponseEntity<ApiResponse<ApiKeyInfoResponse>> checkApiKey(@AuthenticationPrincipal UserDetails userDetails) {
         boolean hasKey = userApiKeyService.hasApiKey(userDetails.getUsername());
         String maskKey = null;
         if (hasKey) {
             String apiKey = userApiKeyService.getDecryptedApiKey(userDetails.getUsername());
             maskKey = userApiKeyService.maskApiKey(apiKey);
         }
-        return ResponseEntity.ok(ApiResponse.success(maskKey));
+        String baseUrl = userApiKeyService.getBaseUrl(userDetails.getUsername());
+        ApiKeyInfoResponse apiInfo = ApiKeyInfoResponse.builder().apiKey(maskKey).baseUrl(baseUrl).build();
+        return ResponseEntity.ok(ApiResponse.success("API 配置信息", apiInfo));
     }
 
     @DeleteMapping("/api-key")
     public ResponseEntity<ApiResponse<Void>> deleteApiKey(@AuthenticationPrincipal UserDetails userDetails) {
         userApiKeyService.deleteApiKey(userDetails.getUsername());
-        return ResponseEntity.ok(ApiResponse.success("API Key 已删除", null));
+        return ResponseEntity.ok(ApiResponse.success("API 配置已删除", null));
     }
 }
