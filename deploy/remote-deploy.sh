@@ -90,8 +90,9 @@ fi
 
 cd "$DEPLOY_PATH"
 git fetch origin "$BRANCH_NAME"
-git checkout "$BRANCH_NAME"
-git pull --ff-only origin "$BRANCH_NAME"
+git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+git reset --hard "origin/$BRANCH_NAME"
+git clean -fd
 
 cat > .env.production <<EOF
 APP_IMAGE=${IMAGE_TAG}
