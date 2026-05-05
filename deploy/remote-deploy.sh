@@ -22,6 +22,7 @@ MYSQL_DATABASE="${MYSQL_DATABASE:-comment_consistency}"
 MYSQL_USER="${MYSQL_USER:-comment_user}"
 ATTU_BIND_IP="${ATTU_BIND_IP:-127.0.0.1}"
 ATTU_PORT="${ATTU_PORT:-8000}"
+BRANCH_NAME="${BRANCH_NAME:-main}"
 
 resolve_volume_root() {
   if [ -n "${DOCKER_VOLUME_DIRECTORY:-}" ]; then
@@ -88,9 +89,9 @@ if [ ! -d "$DEPLOY_PATH/.git" ]; then
 fi
 
 cd "$DEPLOY_PATH"
-git fetch origin main
-git checkout main
-git pull --ff-only origin main
+git fetch origin "$BRANCH_NAME"
+git checkout "$BRANCH_NAME"
+git pull --ff-only origin "$BRANCH_NAME"
 
 cat > .env.production <<EOF
 APP_IMAGE=${IMAGE_TAG}
