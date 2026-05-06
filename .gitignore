@@ -8,6 +8,7 @@ docs/
 bin
 .env
 .env.example
+.env.production
 /volumes
 
 ### STS ###
